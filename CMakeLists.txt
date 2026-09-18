@@ -6,6 +6,8 @@ project(gsusb-canfd VERSION 0.1.0 LANGUAGES CXX
 option(CANFD_BUILD_TESTS "Build the test suite" ON)
 option(CANFD_BUILD_TOOLS "Build the canfd command line tool" ON)
 option(CANFD_BUILD_EXAMPLES "Build the examples" ON)
+option(CANFD_STATIC_RUNTIME
+       "Link the C/C++ runtime statically (Windows: keeps libusb-1.0.dll as the only dependency)" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,6 +15,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+if(CANFD_STATIC_RUNTIME)
+  if(MINGW)
+    # MinGW otherwise links libwinpthread-1.dll as a separate dependency, so the
+    # executables only run where that DLL happens to be on PATH. -static folds
+    # libwinpthread, libgcc and libstdc++ into the binaries.
+    add_link_options(-static -static-libgcc -static-libstdc++)
+  elseif(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  endif()
 endif()
 
 find_package(Threads REQUIRED)

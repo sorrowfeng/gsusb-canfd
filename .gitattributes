@@ -1,0 +1,4 @@
+# Git for Windows defaults to core.autocrlf=true, which would check shell
+# scripts out with CRLF endings. That breaks the shebang and every command in
+# them, so pin LF for scripts regardless of platform.
+*.sh text eol=lf

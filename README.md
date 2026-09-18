@@ -33,7 +33,15 @@ brew install libusb
 
 # Debian/Ubuntu
 sudo apt install libusb-1.0-0-dev
+
+# Windows
+vcpkg install libusb:x64-windows
 ```
+
+On Windows the adapter has to be bound to the **WinUSB** driver, which is what
+libusb talks to. candleLight-compatible adapters normally ship that way already,
+so try the tools first and only reach for Zadig if the adapter is missing —
+the `A8FA:8598` unit used for testing needed no driver swap.
 
 ## Build
 
@@ -42,6 +50,43 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
+
+### Windows
+
+`scripts/build_windows.sh` does the whole thing from Git Bash: downloads libusb
+into `.build/`, configures MinGW + Ninja, builds, runs the tests and lists the
+attached adapters. No admin rights, no PATH setup.
+
+```bash
+./scripts/build_windows.sh
+HTTP_PROXY_URL=http://127.0.0.1:7890 ./scripts/build_windows.sh   # if the download needs a proxy
+```
+
+| variable | purpose | default |
+| --- | --- | --- |
+| `MINGW_DIR` | MinGW toolchain root | `g++` from `PATH`, else `C:/Qt/Tools/mingw1310_64` |
+| `NINJA_DIR` | directory holding `ninja.exe` | `ninja` from `PATH`, else `C:/Qt/Tools/Ninja` |
+| `CMAKE_BIN` | `cmake.exe` | `cmake` from `PATH` |
+| `SEVENZIP` | `7z.exe` | `C:/Program Files/7-Zip/7z.exe` |
+| `LIBUSB_VER` | libusb release to download | `1.0.30` |
+| `HTTP_PROXY_URL` | proxy for the download | none |
+| `BUILD_DIR` | build directory | `<repo>/build` |
+
+```bash
+# or drive CMake yourself
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=C:/Qt/Tools/mingw1310_64/bin/g++.exe \
+  -DCANFD_LIBUSB_INCLUDE_DIR=<sdk>/include/libusb-1.0 \
+  -DCANFD_LIBUSB_LIBRARY=<sdk>/MinGW64/static/libusb-1.0.dll.a \
+  -DCANFD_STATIC_RUNTIME=ON
+```
+
+`CANFD_STATIC_RUNTIME=ON` folds `libstdc++`, `libgcc` and `libwinpthread` into the
+executables. Without it a MinGW build also needs `libwinpthread-1.dll` on `PATH`,
+which defeats the point of shipping a self-contained tool.
+
+`libusb-1.0.dll` must sit next to the executables at runtime (the script copies it
+into the build directory for you).
 
 ## Use from C++
 
