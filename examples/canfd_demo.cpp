@@ -160,8 +160,8 @@ int main(int argc, char** argv) {
 
   std::printf("=== scan ===\n");
   for (const auto& a : canfd::scanAdapters(0, 0)) {
-    std::printf("  %s | %s | %04X:%04X bus=%u addr=%u serial=%s\n", a.manufacturer.c_str(),
-                a.product.c_str(), a.vendor_id, a.product_id, a.bus, a.address, a.serial.c_str());
+    std::printf("  %s | %04X:%04X bus=%u addr=%u serial=%s\n", a.name().c_str(), a.vendor_id,
+                a.product_id, a.bus, a.address, a.serial.c_str());
   }
 
   canfd::CanFdBus bus;

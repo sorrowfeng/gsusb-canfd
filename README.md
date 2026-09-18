@@ -169,6 +169,45 @@ Example run on a `Com Equipment / CANFD Analyser` (`A8FA:8598`):
   id 481 : 6033
 ```
 
+## Interactive terminal
+
+`tools/canfd_term.cpp` is a small REPL. It scans for adapters on start, lets you
+pick one (prompts only when several are connected), then prints received frames in
+real time while you type your own IDs/payloads to transmit.
+
+```bash
+./build/canfd_term
+./build/canfd_term --classic
+./build/canfd_term --index 1            # skip the picker
+./build/canfd_term --bitrate 500000 --data-bitrate 2000000
+```
+
+```
+=== scanning for gs_usb adapters ===
+found 1 adapter(s):
+  [0] Com Equipment CANFD Analyser  A8FA:8598  bus=1 addr=6  serial=F0802068387F4D4D
+only one adapter, selecting [0]
+opened device[0] in=0x81 out=0x01 fclk=80000000 Hz feature=0x000005BB
+
+canfd> send 501 00025001          # standard FD frame
+canfd> send 123 1122334455667788
+canfd> send ext 1ABCDEF DEADBEEF  # extended frame (also: ext:1ABCDEF, or id > 7FF)
+canfd> id 7AB                     # set defaults, then a bare "send"
+canfd> data 01020304
+canfd> send
+canfd> scan                       # list adapters again
+canfd> open 1                     # switch to another adapter
+canfd> filter 481                 # only show these ids (filter off to clear)
+canfd> dedup on                   # hide repeated identical payloads
+canfd> fd on | brs on | echo on
+canfd> wait 3                     # keep receiving without typing
+canfd> quit
+```
+
+Extended frames are fully supported: IDs above `0x7FF` are sent as extended
+automatically, or force it with `send ext <id> ...`. Received extended frames are
+shown with an `X` suffix (e.g. `01ABCDEFX`).
+
 ## Notes
 
 * `receive()` returns every frame the adapter sees, including the adapter's own TX echo.

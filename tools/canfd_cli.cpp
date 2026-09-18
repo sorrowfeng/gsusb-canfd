@@ -125,9 +125,9 @@ int listCommand() {
   }
   for (std::size_t i = 0; i < adapters.size(); ++i) {
     const auto& a = adapters[i];
-    std::printf("[%zu] %s | %s | %04X:%04X bus=%u addr=%u serial=%s\n", i,
-                a.manufacturer.c_str(), a.product.c_str(), a.vendor_id, a.product_id, a.bus,
-                a.address, a.serial.c_str());
+    std::printf("[%zu] %s\n", i, a.name().c_str());
+    std::printf("     vid:pid=%04X:%04X bus=%u addr=%u serial=%s\n", a.vendor_id, a.product_id,
+                a.bus, a.address, a.serial.empty() ? "-" : a.serial.c_str());
   }
   return 0;
 }

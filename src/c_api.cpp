@@ -1,5 +1,7 @@
 #include "canfd/canfd_c.h"
 
+#include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <string>
 
@@ -72,6 +74,35 @@ int canfd_scan(void) {
   try {
     const auto adapters = canfd::scanAdapters(0, 0);
     return static_cast<int>(adapters.size());
+  } catch (const std::exception& exc) {
+    setError(exc.what());
+    return -1;
+  }
+}
+
+int canfd_scan_info(CanFdAdapterInfo* out, int max) {
+  if (out == nullptr || max <= 0) {
+    setError("invalid argument");
+    return CANFD_ERR;
+  }
+  try {
+    const auto adapters = canfd::scanAdapters(0, 0);
+    const int count =
+        std::min<int>(max, static_cast<int>(adapters.size()));
+    for (int i = 0; i < count; ++i) {
+      const auto& a = adapters[static_cast<std::size_t>(i)];
+      std::memset(&out[i], 0, sizeof(out[i]));
+      std::snprintf(out[i].name, sizeof(out[i].name), "%s", a.name().c_str());
+      std::snprintf(out[i].manufacturer, sizeof(out[i].manufacturer), "%s",
+                    a.manufacturer.c_str());
+      std::snprintf(out[i].product, sizeof(out[i].product), "%s", a.product.c_str());
+      std::snprintf(out[i].serial, sizeof(out[i].serial), "%s", a.serial.c_str());
+      out[i].vendor_id = a.vendor_id;
+      out[i].product_id = a.product_id;
+      out[i].bus = a.bus;
+      out[i].address = a.address;
+    }
+    return count;
   } catch (const std::exception& exc) {
     setError(exc.what());
     return -1;

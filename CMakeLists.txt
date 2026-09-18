@@ -78,6 +78,9 @@ if(CANFD_BUILD_TOOLS)
   add_executable(canfd_cli tools/canfd_cli.cpp)
   set_target_properties(canfd_cli PROPERTIES OUTPUT_NAME canfd)
   target_link_libraries(canfd_cli PRIVATE canfd::canfd)
+
+  add_executable(canfd_term tools/canfd_term.cpp)
+  target_link_libraries(canfd_term PRIVATE canfd::canfd)
 endif()
 
 if(CANFD_BUILD_EXAMPLES)

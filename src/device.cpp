@@ -1,6 +1,7 @@
 #include "canfd/device.hpp"
 
 #include <atomic>
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <thread>
@@ -33,6 +34,21 @@ BitTimingConst parseConst(const uint8_t* data) {
 }
 
 }  // namespace
+
+std::string AdapterInfo::name() const {
+  if (!manufacturer.empty() && !product.empty()) {
+    return manufacturer + " " + product;
+  }
+  if (!product.empty()) {
+    return product;
+  }
+  if (!manufacturer.empty()) {
+    return manufacturer;
+  }
+  char buffer[24];
+  std::snprintf(buffer, sizeof(buffer), "gs_usb %04X:%04X", vendor_id, product_id);
+  return buffer;
+}
 
 struct CanFdBus::Impl {
   explicit Impl(const DeviceSelector& sel) : selector(sel) {}

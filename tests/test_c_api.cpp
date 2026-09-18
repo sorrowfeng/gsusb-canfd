@@ -14,6 +14,10 @@ int main() {
     std::fprintf(stderr, "FAIL: null transmit should return CANFD_ERR\n");
     ++failures;
   }
+  if (canfd_scan_info(nullptr, 4) != CANFD_ERR) {
+    std::fprintf(stderr, "FAIL: null scan info should return CANFD_ERR\n");
+    ++failures;
+  }
   canfd_close(nullptr);
 
   const char* error = canfd_last_error();

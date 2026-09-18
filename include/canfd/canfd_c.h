@@ -41,7 +41,19 @@ typedef struct CanFdMsg {
 
 typedef struct CanFdHandle CanFdHandle;
 
+typedef struct CanFdAdapterInfo {
+  char name[160];
+  char manufacturer[64];
+  char product[64];
+  char serial[64];
+  uint16_t vendor_id;
+  uint16_t product_id;
+  uint8_t bus;
+  uint8_t address;
+} CanFdAdapterInfo;
+
 CANFD_API int canfd_scan(void);
+CANFD_API int canfd_scan_info(CanFdAdapterInfo* out, int max);
 CANFD_API CanFdHandle* canfd_open(int index);
 CANFD_API int canfd_configure(CanFdHandle* handle, uint32_t bitrate, double sample_point,
                               uint32_t data_bitrate, double data_sample_point, int fd);

@@ -34,6 +34,8 @@ struct AdapterInfo {
   std::string manufacturer;
   std::string product;
   std::string serial;
+
+  std::string name() const;
 };
 
 struct DeviceSelector {
