@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install libusb (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libusb
+
+      - name: Install libusb (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+
+      - name: Install libusb (Windows)
+        if: runner.os == 'Windows'
+        run: vcpkg install libusb:x64-windows
+
+      - name: Configure
+        shell: bash
+        run: |
+          EXTRA=""
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            EXTRA="-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          fi
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCANFD_BUILD_EXAMPLES=ON $EXTRA
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
