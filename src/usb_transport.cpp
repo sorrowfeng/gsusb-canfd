@@ -48,15 +48,65 @@ std::string toLower(std::string value) {
   return value;
 }
 
-bool looksLikeGsUsb(const AdapterInfo& info) {
-  const std::string text =
-      toLower(info.manufacturer + " " + info.product);
-  for (const char* hint : {"can", "candle", "gs_usb", "gs-usb"}) {
-    if (text.find(hint) != std::string::npos) {
-      return true;
+// gs_usb adapters expose a vendor-specific bulk interface (the class the
+// reference firmware uses for the CAN endpoints). Reading the config descriptor
+// does not require opening the device, so this works even while another handle
+// has the adapter claimed.
+bool hasVendorBulkInterface(libusb_device* device) {
+  libusb_config_descriptor* config = nullptr;
+  if (libusb_get_active_config_descriptor(device, &config) != 0 || config == nullptr) {
+    return false;
+  }
+
+  bool found = false;
+  for (uint8_t i = 0; i < config->bNumInterfaces && !found; ++i) {
+    const libusb_interface& intf = config->interface[i];
+    for (int a = 0; a < intf.num_altsetting && !found; ++a) {
+      const libusb_interface_descriptor& alt = intf.altsetting[a];
+      if (alt.bInterfaceClass != 0xFF) {
+        continue;
+      }
+      bool has_in = false;
+      bool has_out = false;
+      for (uint8_t e = 0; e < alt.bNumEndpoints; ++e) {
+        const libusb_endpoint_descriptor& ep = alt.endpoint[e];
+        if ((ep.bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) != LIBUSB_TRANSFER_TYPE_BULK) {
+          continue;
+        }
+        if ((ep.bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN) {
+          has_in = true;
+        } else {
+          has_out = true;
+        }
+      }
+      if (has_in && has_out) {
+        found = true;
+      }
     }
   }
-  return false;
+
+  libusb_free_config_descriptor(config);
+  return found;
+}
+
+bool looksLikeGsUsb(const AdapterInfo& info, libusb_device* device) {
+  const bool have_descriptors = !info.manufacturer.empty() || !info.product.empty();
+  if (have_descriptors) {
+    const std::string text = toLower(info.manufacturer + " " + info.product);
+    for (const char* hint : {"can", "candle", "gs_usb", "gs-usb"}) {
+      if (text.find(hint) != std::string::npos) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // String descriptors are unavailable -- either the device is already opened
+  // and claimed by another handle (libusb_open fails, so nothing can be read),
+  // or the adapter does not provide them at all. Falling back to the interface
+  // shape keeps a busy adapter discoverable without matching unrelated USB
+  // devices, which is what a blanket "no descriptors -> accept" would do.
+  return hasVendorBulkInterface(device);
 }
 
 std::vector<FoundDevice> findDevices(libusb_context* context, const DeviceSelector& selector,
@@ -103,7 +153,7 @@ std::vector<FoundDevice> findDevices(libusb_context* context, const DeviceSelect
         toLower(info.product).find(toLower(*selector.product)) == std::string::npos) {
       continue;
     }
-    if (useHeuristics && !looksLikeGsUsb(info)) {
+    if (useHeuristics && !looksLikeGsUsb(info, device)) {
       continue;
     }
 
