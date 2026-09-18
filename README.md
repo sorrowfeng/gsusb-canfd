@@ -6,12 +6,12 @@ It talks to candleLight-compatible USB-CAN adapters directly over `libusb` — n
 driver, no Zadig on macOS, no `sudo`. It also handles adapters that differ from the
 candleLight reference in two ways:
 
-* vendor bulk endpoints (`IN = 0x81`, `OUT = 0x01` instead of `0x81`/`0x02`), and
+* device-specific bulk endpoints (`IN = 0x81`, `OUT = 0x01` instead of the
+  candleLight `0x81`/`0x02`), and
 * CAN FD data-phase timing configured through `GS_USB_BREQ_BT_CONST_EXT` (request 11) and
   `GS_USB_BREQ_DATA_BITTIMING` (request 10).
 
-This is the C++ counterpart of the Python `canfd-mac` project and speaks the same wire
-protocol as the Linux `gs_usb` kernel driver.
+It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 
 ## Features
 
@@ -19,7 +19,7 @@ protocol as the Linux `gs_usb` kernel driver.
 * Arbitrary bitrates derived from the adapter's clock and sample-point target
 * Blocking `receive()` **and** background-thread callback mode
 * Hardware timestamps, listen-only, loopback, one-shot
-* Small C++17 API and an optional C ABI (`canfd_c.h`) for easy integration
+* Clean C++17 API (`canfd::CanFdBus`) for easy integration
 * `canfd` CLI (`list` / `send` / `monitor`) and examples
 
 ## Requirements
@@ -106,27 +106,6 @@ target_link_libraries(your_app PRIVATE canfd::canfd)
 ```
 
 To build only what you need pass `-DCANFD_BUILD_TESTS=OFF -DCANFD_BUILD_TOOLS=OFF -DCANFD_BUILD_EXAMPLES=OFF`.
-
-## C ABI
-
-For projects that currently link a vendor DLL with a `CanFD_Msg`-style interface, use
-`include/canfd/canfd_c.h`:
-
-```c
-CanFdHandle* bus = canfd_open(0);
-canfd_configure(bus, 1000000, 0.80, 5000000, 0.75, 1);
-
-CanFdMsg tx = {0};
-tx.id = 0x501;
-tx.flags = CANFD_FLAG_FD | CANFD_FLAG_BRS;
-tx.size = 4;
-tx.data[3] = 0x01;
-canfd_transmit(bus, &tx);
-
-CanFdMsg rx;
-if (canfd_receive(bus, &rx, 500) == CANFD_OK) { /* ... */ }
-canfd_close(bus);
-```
 
 ## CLI
 

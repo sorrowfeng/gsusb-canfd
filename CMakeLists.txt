@@ -42,8 +42,7 @@ add_library(canfd
   src/bit_timing.cpp
   src/frame.cpp
   src/usb_transport.cpp
-  src/device.cpp
-  src/c_api.cpp)
+  src/device.cpp)
 add_library(canfd::canfd ALIAS canfd)
 
 target_include_directories(canfd
@@ -94,7 +93,7 @@ endif()
 if(CANFD_BUILD_TESTS)
   enable_testing()
 
-  foreach(test_name test_bit_timing test_frame test_c_api)
+  foreach(test_name test_bit_timing test_frame)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE canfd::canfd)
     add_test(NAME ${test_name} COMMAND ${test_name})
