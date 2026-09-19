@@ -1,5 +1,10 @@
 # gsusb-canfd
 
+[![ci](https://github.com/sorrowfeng/gsusb-canfd/actions/workflows/ci.yml/badge.svg)](https://github.com/sorrowfeng/gsusb-canfd/actions/workflows/ci.yml)
+[![TestPyPI](https://img.shields.io/badge/TestPyPI-gsusb--canfd-blue)](https://test.pypi.org/project/gsusb-canfd/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](#)
+
 Cross-platform, userspace **gs_usb** driver with full **CAN FD** support, written in C++17.
 
 It talks to candleLight-compatible USB-CAN adapters directly over `libusb` — no kernel
@@ -288,7 +293,10 @@ same wire protocol as the C++ library, so either can be used on its own. It does
 endpoints and classic-only timing.
 
 ```bash
-pip install ./python
+pip install ./python                 # from this repository
+# or the TestPyPI release (0.1.0)
+pip install --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ gsusb-canfd
 ```
 
 ```python
@@ -307,7 +315,20 @@ gsusb-canfd monitor --trigger --trigger-id 501 --trigger-data 00025001
 ```
 
 The protocol logic (bit timing, DLC mapping, frame codec) is pure Python and is
-covered by hardware-free unit tests; see `python/README.md` for details.
+covered by hardware-free unit tests. See [`python/README.md`](python/README.md)
+for the API and [`python/PUBLISHING.md`](python/PUBLISHING.md) for releasing.
+
+## Repository layout
+
+```
+include/canfd/   public C++ headers and the C ABI (canfd.h)
+src/             library implementation
+tools/           canfd CLI and interactive terminal
+examples/        C++ examples
+tests/           C++ unit tests
+python/          pure-Python package, CLI, tests and publishing docs
+scripts/         helper build scripts
+```
 
 ## Notes
 

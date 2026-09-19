@@ -1,8 +1,9 @@
 # gsusb-canfd (Python)
 
-Python implementation of the `gsusb-canfd` library: a userspace **gs_usb**
-CAN FD driver built directly on `pyusb`/`libusb`. It speaks the same wire
-protocol as the C++ library in this repository, so the two are interchangeable.
+Part of the [gsusb-canfd](../README.md) project. Python implementation of the
+library: a userspace **gs_usb** CAN FD driver built directly on `pyusb`/`libusb`.
+It speaks the same wire protocol as the C++ library in this repository, so the two
+are interchangeable.
 
 It does **not** depend on the `gs_usb` / `python-can` packages. Those assume the
 candleLight reference endpoints (`OUT = 0x02`) and only configure classic CAN
@@ -84,3 +85,8 @@ covered by unit tests that need no hardware:
 pip install -e './python[dev]'
 pytest python/tests
 ```
+
+## Releasing
+
+See [PUBLISHING.md](PUBLISHING.md); the version lives in
+[`src/gsusb_canfd/_version.py`](src/gsusb_canfd/_version.py).

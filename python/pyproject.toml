@@ -38,6 +38,7 @@ dev = [
 Homepage = "https://github.com/sorrowfeng/gsusb-canfd"
 Repository = "https://github.com/sorrowfeng/gsusb-canfd"
 Issues = "https://github.com/sorrowfeng/gsusb-canfd/issues"
+Changelog = "https://github.com/sorrowfeng/gsusb-canfd/blob/main/CHANGELOG.md"
 "Source (Python)" = "https://github.com/sorrowfeng/gsusb-canfd/tree/main/python"
 
 [project.scripts]
