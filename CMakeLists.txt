@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(gsusb-canfd VERSION 0.1.1 LANGUAGES CXX
+# Single source of truth for the version: python/src/gsusb_canfd/_version.py.
+# Both the Python package and the C++/C ABI read it from here.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/python/src/gsusb_canfd/_version.py"
+     _canfd_version_line REGEX "__version__")
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" CANFD_VERSION "${_canfd_version_line}")
+if(NOT CANFD_VERSION)
+  message(FATAL_ERROR "could not read __version__ from python/src/gsusb_canfd/_version.py")
+endif()
+
+project(gsusb-canfd VERSION ${CANFD_VERSION} LANGUAGES CXX
         DESCRIPTION "Cross-platform userspace gs_usb CAN FD library")
 
 option(CANFD_BUILD_TESTS "Build the test suite" ON)
@@ -95,9 +104,17 @@ add_library(canfd
   src/c_api.cpp)
 add_library(canfd::canfd ALIAS canfd)
 
+# Generated version header, kept in sync with CANFD_VERSION above.
+set(CANFD_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CANFD_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CANFD_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+configure_file(cmake/version.hpp.in
+               ${CMAKE_CURRENT_BINARY_DIR}/generated/canfd/version.hpp @ONLY)
+
 target_include_directories(canfd
   PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>)
 
 target_compile_features(canfd PUBLIC cxx_std_17)
 set_target_properties(canfd PROPERTIES POSITION_INDEPENDENT_CODE ON)

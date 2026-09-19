@@ -1,0 +1,12 @@
+#ifndef CANFD_VERSION_HPP
+#define CANFD_VERSION_HPP
+
+/* Generated from python/src/gsusb_canfd/_version.py by CMake.
+ * Do not edit; the version has a single source of truth in that file. */
+
+#define CANFD_VERSION "@CANFD_VERSION@"
+#define CANFD_VERSION_MAJOR @CANFD_VERSION_MAJOR@
+#define CANFD_VERSION_MINOR @CANFD_VERSION_MINOR@
+#define CANFD_VERSION_PATCH @CANFD_VERSION_PATCH@
+
+#endif  /* CANFD_VERSION_HPP */

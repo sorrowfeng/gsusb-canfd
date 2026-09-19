@@ -67,7 +67,8 @@ unit tests are still required, and a maintainer can run the hardware checks.
 
 Releases are published from GitHub Actions with Trusted Publishing; see
 [`python/PUBLISHING.md`](python/PUBLISHING.md). The version has a single source of
-truth in `python/src/gsusb_canfd/_version.py`.
+truth in `python/src/gsusb_canfd/_version.py` — CMake reads it and generates
+`canfd/version.hpp` for the C++/C ABI, so bump that one file only.
 
 ## License
 

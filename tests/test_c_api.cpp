@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "canfd/canfd.h"
+#include "canfd/version.hpp"
 
 namespace {
 
@@ -18,6 +19,7 @@ void check(bool condition, const char* message) {
 
 int main() {
   check(canfd_version() != nullptr && canfd_version()[0] != '\0', "version is set");
+  check(std::strcmp(canfd_version(), CANFD_VERSION) == 0, "C ABI version matches header");
   check(canfd_last_error() != nullptr, "last error is never null");
 
   CanFdBusConfig config;

@@ -6,6 +6,7 @@
 #include <string>
 
 #include "canfd/canfd.hpp"
+#include "canfd/version.hpp"
 
 struct CanFdHandle {
   explicit CanFdHandle(const canfd::DeviceSelector& selector) : bus(selector) {}
@@ -61,7 +62,7 @@ void toCFrame(const canfd::CanFrame& in, CanFdFrame& out) {
 
 extern "C" {
 
-const char* canfd_version(void) { return "0.1.1"; }
+const char* canfd_version(void) { return CANFD_VERSION; }
 
 const char* canfd_last_error(void) { return g_last_error.c_str(); }
 

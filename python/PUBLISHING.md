@@ -22,7 +22,8 @@ Current status: **0.1.1 is live on PyPI** and TestPyPI (see the CHANGELOG).
 ## Release checklist
 
 1. Bump the version in `python/src/gsusb_canfd/_version.py` (single source of
-   truth; `pyproject.toml` reads it dynamically).
+   truth; `pyproject.toml` reads it dynamically and CMake generates
+   `canfd/version.hpp` for the C++/C ABI from it).
 2. Commit and push.
 3. Publish to TestPyPI first (manual): **Actions → publish → Run workflow**, choose
    `testpypi`. Then verify:
