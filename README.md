@@ -5,7 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](#)
 
-Cross-platform, userspace **gs_usb** driver with full **CAN FD** support, written in C++17.
+Cross-platform, userspace **gs_usb** CAN / CAN FD toolkit in **C++17 and Python**.
+Both implementations speak the same wire protocol and expose the same API, so you
+can pick whichever fits your project — or use both; they are interchangeable.
 
 It talks to candleLight-compatible USB-CAN adapters directly over `libusb` — no kernel
 driver, no Zadig on macOS, no `sudo`. It also handles adapters that differ from the
@@ -20,14 +22,15 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 
 ## Features
 
+* Two implementations, same API and protocol: C++17 (`canfd::CanFdBus`) and pure
+  Python (`python/`, package `gsusb_canfd`)
 * CAN and CAN FD (ISO), standard and extended IDs, RTR
 * Arbitrary bitrates derived from the adapter's clock and sample-point target
 * Blocking `receive()` **and** background-thread callback mode
 * Hardware timestamps, listen-only, loopback, one-shot
-* Clean C++17 API (`canfd::CanFdBus`) for easy integration
 * Stable C ABI (`include/canfd/canfd.h`) for ctypes/cffi, Rust FFI, C#, ...
-* Matching pure-Python implementation and CLI (`python/`, package `gsusb_canfd`)
-* `canfd` CLI (`list` / `send` / `monitor`) and examples
+* Adapter auto-discovery and multi-channel selection
+* `canfd` / `gsusb-canfd` CLI (`list` / `send` / `monitor`), demo and terminal
 
 ## Requirements
 
