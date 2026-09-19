@@ -91,7 +91,8 @@ add_library(canfd
   src/bit_timing.cpp
   src/frame.cpp
   src/usb_transport.cpp
-  src/device.cpp)
+  src/device.cpp
+  src/c_api.cpp)
 add_library(canfd::canfd ALIAS canfd)
 
 target_include_directories(canfd
@@ -105,10 +106,9 @@ target_link_libraries(canfd PRIVATE ${CANFD_LIBUSB_TARGET})
 target_link_libraries(canfd PRIVATE Threads::Threads)
 
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(canfd PRIVATE CANFD_BUILD_SHARED)
-  set_target_properties(canfd PROPERTIES
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN ON)
+  target_compile_definitions(canfd PRIVATE CANFD_SHARED)
+else()
+  target_compile_definitions(canfd PUBLIC CANFD_STATIC)
 endif()
 
 if(MSVC)
@@ -137,7 +137,7 @@ endif()
 if(CANFD_BUILD_TESTS)
   enable_testing()
 
-  foreach(test_name test_bit_timing test_frame)
+  foreach(test_name test_bit_timing test_frame test_c_api)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE canfd::canfd)
     add_test(NAME ${test_name} COMMAND ${test_name})

@@ -20,6 +20,7 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 * Blocking `receive()` **and** background-thread callback mode
 * Hardware timestamps, listen-only, loopback, one-shot
 * Clean C++17 API (`canfd::CanFdBus`) for easy integration
+* Stable C ABI (`include/canfd/canfd.h`) for ctypes/cffi, Rust FFI, C#, ...
 * Matching pure-Python implementation and CLI (`python/`, package `gsusb_canfd`)
 * `canfd` CLI (`list` / `send` / `monitor`) and examples
 
@@ -160,6 +161,41 @@ target_link_libraries(your_app PRIVATE canfd::canfd)
 ```
 
 To build only what you need pass `-DCANFD_BUILD_TESTS=OFF -DCANFD_BUILD_TOOLS=OFF -DCANFD_BUILD_EXAMPLES=OFF`.
+
+## C ABI
+
+`include/canfd/canfd.h` exposes a stable, opaque C interface for callers that cannot
+use C++ (ctypes/cffi, Rust FFI, C#, ...). Functions never throw: they return
+`CANFD_OK` / `CANFD_ERROR`, and `canfd_last_error()` carries the message. Build a
+shared library with `-DBUILD_SHARED_LIBS=ON` to load it dynamically.
+
+```c
+#include "canfd/canfd.h"
+
+CanFdAdapterInfo adapters[4];
+int count = canfd_scan(adapters, 4);
+
+CanFdHandle* bus = canfd_open(0);
+CanFdBusConfig config;
+canfd_bus_config_default(&config);
+config.bitrate = 1000000;
+config.data_bitrate = 5000000;
+canfd_configure(bus, &config);
+
+CanFdFrame tx = {0};
+tx.id = 0x501;
+tx.fd = tx.brs = 1;
+tx.size = 4;
+tx.data[3] = 0x01;
+canfd_send(bus, &tx);
+
+CanFdFrame rx;
+int rc = canfd_receive(bus, &rx, 500);   /* 1 frame, 0 timeout, -1 error */
+canfd_close(bus);
+```
+
+Async receive uses `canfd_start(bus, callback, user)` / `canfd_stop(bus)`; the
+callback runs on the library's receive thread. See `tests/test_c_api.cpp`.
 
 ## CLI
 
