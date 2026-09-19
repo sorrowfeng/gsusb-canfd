@@ -15,7 +15,7 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 
 ## Features
 
-* CAN and CAN FD, ISO and non-ISO, standard and extended IDs, RTR
+* CAN and CAN FD (ISO), standard and extended IDs, RTR
 * Arbitrary bitrates derived from the adapter's clock and sample-point target
 * Blocking `receive()` **and** background-thread callback mode
 * Hardware timestamps, listen-only, loopback, one-shot
@@ -323,8 +323,9 @@ covered by hardware-free unit tests; see `python/README.md` for details.
   `GS_CAN_FEATURE_HW_TIMESTAMP`; RX buffers are then 80 bytes.
 * `CanFdBus` owns an exclusive USB handle and is not meant to be shared across threads
   for concurrent `send`/`receive`; the callback mode runs on one internal thread.
-* Non-ISO CAN FD is not part of the standard gs_usb protocol (candleLight is ISO-only,
-  there is no mode bit for it), so it is not supported.
+* Non-ISO CAN FD is a real CAN FD variant, but the standard gs_usb protocol exposes
+  only a single FD mode bit (candleLight firmware is ISO-only). Selecting non-ISO
+  requires vendor-specific control that this library does not implement.
 
 ## License
 
