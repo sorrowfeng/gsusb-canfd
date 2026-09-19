@@ -116,9 +116,12 @@ CanFrame decodeFrame(const uint8_t* buffer, std::size_t length, bool hw_timestam
     frame.data[i] = buffer[kHeaderSize + i];
   }
 
-  if (hw_timestamp && length >= kHeaderSize + kMaxPayload + 4) {
-    const uint32_t ts_us = getU32Le(buffer + kHeaderSize + kMaxPayload);
-    frame.timestamp = static_cast<double>(ts_us) / 1'000'000.0;
+  if (hw_timestamp) {
+    const std::size_t payload_size = frame.fd ? kMaxPayload : 8;
+    if (length >= kHeaderSize + payload_size + 4) {
+      const uint32_t ts_us = getU32Le(buffer + kHeaderSize + payload_size);
+      frame.timestamp = static_cast<double>(ts_us) / 1'000'000.0;
+    }
   }
   return frame;
 }
