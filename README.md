@@ -27,6 +27,11 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 * CMake >= 3.16 and a C++17 compiler
 * libusb-1.0
 
+libusb is found automatically, in this order: `pkg-config`, an installed CMake
+package, then `find_path`/`find_library`. If none of those work, point CMake at
+your installation with `-DLIBUSB_ROOT=<dir>` (a directory containing `include/`
+and `lib/`) or the standard `CMAKE_PREFIX_PATH`.
+
 ```bash
 # macOS
 brew install libusb
@@ -34,8 +39,11 @@ brew install libusb
 # Debian/Ubuntu
 sudo apt install libusb-1.0-0-dev
 
-# Windows
+# Windows: vcpkg ...
 vcpkg install libusb:x64-windows
+# ... or the official prebuilt package from
+# https://github.com/libusb/libusb/releases, extracted and pointed at with
+cmake -S . -B build -DLIBUSB_ROOT=C:/path/to/libusb-1.0.30
 ```
 
 On Windows the adapter has to be bound to the **WinUSB** driver, which is what
