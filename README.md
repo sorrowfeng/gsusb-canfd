@@ -333,6 +333,8 @@ python/          pure-Python package, CLI, tests and publishing docs
 scripts/         helper build scripts
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and submit changes.
+
 ## Notes
 
 * Adapters are auto-discovered by default: known gs_usb USB ids plus manufacturer/

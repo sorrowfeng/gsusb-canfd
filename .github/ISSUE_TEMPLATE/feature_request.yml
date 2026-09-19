@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest an idea or enhancement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Please describe the problem you are trying to
+        solve, not only the solution you have in mind.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - C++ library
+        - C ABI (canfd.h)
+        - Python package (gsusb_canfd)
+        - CLI (canfd / gsusb-canfd)
+        - Build / packaging
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: API sketch, CLI flag, config field, ...
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: input
+    id: adapter
+    attributes:
+      label: Adapter (if relevant)
+      placeholder: "VID:PID, product string"
+    validations:
+      required: false

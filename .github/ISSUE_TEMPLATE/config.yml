@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/sorrowfeng/gsusb-canfd/discussions
+    about: Ask questions and share setups in Discussions.

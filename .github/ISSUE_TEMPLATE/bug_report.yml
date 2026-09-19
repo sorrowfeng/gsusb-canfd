@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a problem with gsusb-canfd
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in as much as you
+        can; incomplete reports are hard to act on.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - C++ library
+        - C ABI (canfd.h)
+        - Python package (gsusb_canfd)
+        - CLI (canfd / gsusb-canfd)
+        - Build / packaging
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release/tag, commit, or `gsusb_canfd.__version__`
+      placeholder: "0.1.0 / commit abc1234"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and toolchain
+      placeholder: "macOS 15 arm64, Apple clang 16 / Ubuntu 24.04 / Windows 11 MSVC"
+    validations:
+      required: true
+  - type: input
+    id: adapter
+    attributes:
+      label: Adapter
+      description: VID:PID, product string and firmware/hardware version if known
+      placeholder: "A8FA:8598 Com Equipment CANFD Analyser, fw 0.2 hw 0.1"
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Actual behaviour, including any error message (`canfd_last_error()` / exception).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal code or CLI invocation.
+      render: shell
+    validations:
+      required: true
