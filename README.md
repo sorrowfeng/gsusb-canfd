@@ -1,7 +1,7 @@
 # gsusb-canfd
 
 [![ci](https://github.com/sorrowfeng/gsusb-canfd/actions/workflows/ci.yml/badge.svg)](https://github.com/sorrowfeng/gsusb-canfd/actions/workflows/ci.yml)
-[![TestPyPI](https://img.shields.io/badge/TestPyPI-gsusb--canfd-blue)](https://test.pypi.org/project/gsusb-canfd/)
+[![PyPI](https://img.shields.io/pypi/v/gsusb-canfd.svg)](https://pypi.org/project/gsusb-canfd/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](#)
 
@@ -297,9 +297,8 @@ endpoints and classic-only timing.
 
 ```bash
 pip install ./python                 # from this repository
-# or the TestPyPI release (0.1.0)
-pip install --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ gsusb-canfd
+# or the published release
+pip install gsusb-canfd
 ```
 
 ```python
