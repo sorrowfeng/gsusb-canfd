@@ -20,6 +20,7 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 * Blocking `receive()` **and** background-thread callback mode
 * Hardware timestamps, listen-only, loopback, one-shot
 * Clean C++17 API (`canfd::CanFdBus`) for easy integration
+* Matching pure-Python implementation and CLI (`python/`, package `gsusb_canfd`)
 * `canfd` CLI (`list` / `send` / `monitor`) and examples
 
 ## Requirements
@@ -239,6 +240,36 @@ canfd> quit
 Extended frames are fully supported: IDs above `0x7FF` are sent as extended
 automatically, or force it with `send ext <id> ...`. Received extended frames are
 shown with an `X` suffix (e.g. `01ABCDEFX`).
+
+## Python
+
+A pure-Python implementation with the same API lives in `python/` (package
+`gsusb_canfd`). It talks to the adapter through `pyusb`/`libusb` and speaks the
+same wire protocol as the C++ library, so either can be used on its own. It does
+**not** depend on the `gs_usb` / `python-can` packages, which assume different
+endpoints and classic-only timing.
+
+```bash
+pip install ./python
+```
+
+```python
+from gsusb_canfd import BusConfig, CanFdBus, CanFrame
+
+with CanFdBus() as bus:
+    bus.configure(BusConfig(bitrate=1_000_000, sample_point=0.80,
+                            data_bitrate=5_000_000, data_sample_point=0.75, fd=True))
+    bus.send(CanFrame(id=0x501, data=bytes([0x00, 0x02, 0x50, 0x01]), fd=True, brs=True))
+    frame = bus.receive(timeout=0.5)
+```
+
+```bash
+gsusb-canfd list
+gsusb-canfd monitor --trigger --trigger-id 501 --trigger-data 00025001
+```
+
+The protocol logic (bit timing, DLC mapping, frame codec) is pure Python and is
+covered by hardware-free unit tests; see `python/README.md` for details.
 
 ## Notes
 

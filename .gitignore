@@ -11,3 +11,8 @@ compile_commands.json
 .DS_Store
 .vscode/
 .idea/
+__pycache__/
+*.py[cod]
+*.egg-info/
+python/.venv/
+.pytest_cache/
