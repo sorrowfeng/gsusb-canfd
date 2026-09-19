@@ -431,6 +431,12 @@ class CanFdBus:
 
     # ------------------------------------------------------------- teardown
 
+    def is_open(self) -> bool:
+        return self._device is not None
+
+    def is_started(self) -> bool:
+        return self._started
+
     def close(self) -> None:
         self.stop()
         if self._device is not None and self._started:
