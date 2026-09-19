@@ -1,8 +1,10 @@
 # Publishing to PyPI
 
-The package is published from GitHub Actions with
+`gsusb-canfd` is published from GitHub Actions with
 [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC), so no API
 token or secret is stored. The workflow is `.github/workflows/publish.yml`.
+
+Current status: **0.1.0 is live on PyPI** and TestPyPI (see the CHANGELOG).
 
 ## One-time setup
 

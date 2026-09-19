@@ -7,7 +7,7 @@ import sys
 import time
 from typing import List, Optional
 
-from .bus import DEFAULT_PID, DEFAULT_VID, BusConfig, CanFdBus, DeviceSelector, scan_adapters
+from .bus import BusConfig, CanFdBus, DeviceSelector, scan_adapters
 from .protocol import CanFdError, CanFrame
 
 
@@ -34,11 +34,13 @@ def _parse_data(text: str) -> bytes:
 
 
 def _add_device_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--vid", type=lambda v: int(v, 0), default=DEFAULT_VID,
-                        help="USB vendor id (default: 0xA8FA)")
-    parser.add_argument("--pid", type=lambda v: int(v, 0), default=DEFAULT_PID,
-                        help="USB product id (default: 0x8598)")
+    parser.add_argument("--vid", type=lambda v: int(v, 0), default=0,
+                        help="USB vendor id (default: 0 = any gs_usb adapter)")
+    parser.add_argument("--pid", type=lambda v: int(v, 0), default=0,
+                        help="USB product id (default: 0 = any gs_usb adapter)")
     parser.add_argument("--index", type=int, default=0, help="device index")
+    parser.add_argument("--channel", type=int, default=0,
+                        help="CAN channel on the device (default: 0)")
     parser.add_argument("--serial", default=None, help="select by serial number")
     parser.add_argument("--product", default=None, help="select by product string substring")
 
@@ -72,7 +74,7 @@ def _config_from_args(args) -> BusConfig:
 def _open(args) -> CanFdBus:
     bus = CanFdBus(
         DeviceSelector(
-            vid=args.vid, pid=args.pid, index=args.index,
+            vid=args.vid, pid=args.pid, index=args.index, channel=args.channel,
             serial=args.serial, product=args.product,
         )
     )

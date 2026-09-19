@@ -14,8 +14,12 @@ This package handles both.
 ## Install
 
 ```bash
+pip install gsusb-canfd        # from PyPI
+# or, to work on the package itself:
 pip install ./python
 ```
+
+The distribution is named `gsusb-canfd`; the import name is `gsusb_canfd`.
 
 Requires `libusb-1.0` at runtime (`brew install libusb`, `apt install libusb-1.0-0-dev`).
 

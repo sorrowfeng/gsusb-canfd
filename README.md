@@ -30,7 +30,8 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 * Hardware timestamps, listen-only, loopback, one-shot
 * Stable C ABI (`include/canfd/canfd.h`) for ctypes/cffi, Rust FFI, C#, ...
 * Adapter auto-discovery and multi-channel selection
-* `canfd` / `gsusb-canfd` CLI (`list` / `send` / `monitor`), demo and terminal
+* `canfd` (C++) and `gsusb-canfd` (Python) CLIs (`list` / `send` / `monitor`),
+  plus a hardware demo and an interactive terminal
 
 ## Requirements
 
@@ -111,7 +112,7 @@ into the build directory for you).
 ```cpp
 #include "canfd/canfd.hpp"
 
-canfd::CanFdBus bus;                 // defaults to 0xA8FA:0x8598, device 0
+canfd::CanFdBus bus;                 // auto-discovers any gs_usb adapter
 bus.open();
 
 canfd::BusConfig config;
@@ -289,17 +290,16 @@ shown with an `X` suffix (e.g. `01ABCDEFX`).
 
 ## Python
 
-A pure-Python implementation with the same API lives in `python/` (package
-`gsusb_canfd`). It talks to the adapter through `pyusb`/`libusb` and speaks the
-same wire protocol as the C++ library, so either can be used on its own. It does
-**not** depend on the `gs_usb` / `python-can` packages, which assume different
-endpoints and classic-only timing.
+A pure-Python implementation with the same API lives in `python/`. It talks to the
+adapter through `pyusb`/`libusb` and speaks the same wire protocol as the C++
+library, so either can be used on its own. It does **not** depend on the `gs_usb` /
+`python-can` packages, which assume different endpoints and classic-only timing.
 
 ```bash
-pip install ./python                 # from this repository
-# or the published release
-pip install gsusb-canfd
+pip install gsusb-canfd        # published on PyPI
 ```
+
+The distribution is named `gsusb-canfd`; the import name is `gsusb_canfd`:
 
 ```python
 from gsusb_canfd import BusConfig, CanFdBus, CanFrame
@@ -309,6 +309,12 @@ with CanFdBus() as bus:
                             data_bitrate=5_000_000, data_sample_point=0.75, fd=True))
     bus.send(CanFrame(id=0x501, data=bytes([0x00, 0x02, 0x50, 0x01]), fd=True, brs=True))
     frame = bus.receive(timeout=0.5)
+```
+
+To work on the package itself, install the checkout instead:
+
+```bash
+pip install ./python
 ```
 
 ```bash
