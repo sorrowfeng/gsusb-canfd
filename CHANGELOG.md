@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Python hardware demo (`python/examples/canfd_demo.py`) mirroring the C++ one.
+
 ### Fixed
 
 - Python CLI now auto-discovers any gs_usb adapter by default (like the C++

@@ -322,6 +322,15 @@ gsusb-canfd list
 gsusb-canfd monitor --trigger --trigger-id 501 --trigger-data 00025001
 ```
 
+A Python version of the hardware demo lives in
+[`python/examples/canfd_demo.py`](python/examples/canfd_demo.py) and mirrors
+[`examples/canfd_demo.cpp`](examples/canfd_demo.cpp):
+
+```bash
+python python/examples/canfd_demo.py --seconds 6
+python python/examples/canfd_demo.py --monitor --seconds 5
+```
+
 The protocol logic (bit timing, DLC mapping, frame codec) is pure Python and is
 covered by hardware-free unit tests. See [`python/README.md`](python/README.md)
 for the API and [`python/PUBLISHING.md`](python/PUBLISHING.md) for releasing.

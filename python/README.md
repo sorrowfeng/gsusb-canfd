@@ -80,6 +80,18 @@ gsusb-canfd monitor --bitrate 1000000 --sample-point 0.80 \
 gsusb-canfd send --classic 123 1122334455667788
 ```
 
+## Hardware demo
+
+[`examples/canfd_demo.py`](examples/canfd_demo.py) mirrors the C++ demo: it prints
+the adapter capabilities and negotiated timing, sends a trigger on `0x501`, and
+reports responses on `0x481` with a periodic frame rate.
+
+```bash
+python examples/canfd_demo.py --seconds 6
+python examples/canfd_demo.py --monitor --seconds 5
+python examples/canfd_demo.py --all --all-frames
+```
+
 ## Tests
 
 The protocol logic (bit timing, DLC mapping, frame codec) is pure Python and is
