@@ -5,6 +5,7 @@ The wire protocol, bit timing and frame codec live in
 adapter through pyusb.
 """
 
+from ._version import __version__
 from .bus import (
     DEFAULT_PID,
     DEFAULT_VID,
@@ -26,8 +27,6 @@ from .protocol import (
     encode_frame,
     length_to_dlc,
 )
-
-__version__ = "0.1.0"
 
 __all__ = [
     "AdapterInfo",
