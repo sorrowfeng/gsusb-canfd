@@ -61,7 +61,7 @@ void toCFrame(const canfd::CanFrame& in, CanFdFrame& out) {
 
 extern "C" {
 
-const char* canfd_version(void) { return "0.1.0"; }
+const char* canfd_version(void) { return "0.1.1"; }
 
 const char* canfd_last_error(void) { return g_last_error.c_str(); }
 

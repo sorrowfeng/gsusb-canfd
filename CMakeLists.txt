@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(gsusb-canfd VERSION 0.1.0 LANGUAGES CXX
+project(gsusb-canfd VERSION 0.1.1 LANGUAGES CXX
         DESCRIPTION "Cross-platform userspace gs_usb CAN FD library")
 
 option(CANFD_BUILD_TESTS "Build the test suite" ON)
