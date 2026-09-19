@@ -4,7 +4,7 @@
 [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC), so no API
 token or secret is stored. The workflow is `.github/workflows/publish.yml`.
 
-Current status: **0.1.0 is live on PyPI** and TestPyPI (see the CHANGELOG).
+Current status: **0.1.1 is live on PyPI** and TestPyPI (see the CHANGELOG).
 
 ## One-time setup
 
@@ -33,11 +33,11 @@ Current status: **0.1.0 is live on PyPI** and TestPyPI (see the CHANGELOG).
    python -c "import gsusb_canfd; print(gsusb_canfd.__version__)"
    ```
 
-4. Publish to PyPI by pushing a tag:
+4. Publish to PyPI by pushing a tag (use the version you just bumped, e.g. `v0.1.1`):
 
    ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v0.1.1
+   git push origin v0.1.1
    ```
 
    (Or run the workflow manually with `target: pypi`.)
