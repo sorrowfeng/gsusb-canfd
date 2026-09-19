@@ -52,13 +52,14 @@ from .protocol import (
 DEFAULT_VID = 0xA8FA
 DEFAULT_PID = 0x8598
 
-# USB ids the Linux gs_usb driver binds to.
+# USB ids the Linux gs_usb driver binds to (plus this project's test adapter).
 KNOWN_DEVICES = (
     (0x1D50, 0x606F),  # Geschwister Schneider / candleLight
     (0x1209, 0x2323),  # candleLight
     (0x1CD2, 0x606F),  # CES CANext FD
     (0x16D0, 0x10B8),  # ABE CAN Debugger FD
     (0x1209, 0xCA01),  # Cannectivity
+    (0xA8FA, 0x8598),  # Com Equipment CANFD Analyser
 )
 
 
@@ -81,9 +82,10 @@ class AdapterInfo:
 
 @dataclass
 class DeviceSelector:
-    vid: int = DEFAULT_VID
-    pid: int = DEFAULT_PID
+    vid: int = 0
+    pid: int = 0
     index: int = 0
+    channel: int = 0
     serial: Optional[str] = None
     product: Optional[str] = None
 
@@ -93,6 +95,7 @@ class DeviceInfo:
     icount: int = 0
     sw_version: int = 0
     hw_version: int = 0
+    channel_count: int = 1
 
 
 @dataclass
@@ -130,11 +133,29 @@ def _bulk_endpoints(interface):
     return ep_in, ep_out
 
 
+def _has_vendor_bulk_interface(device) -> bool:
+    try:
+        for config in device:
+            for interface in config:
+                if getattr(interface, "bInterfaceClass", None) != 0xFF:
+                    continue
+                ep_in, ep_out = _bulk_endpoints(interface)
+                if ep_in is not None and ep_out is not None:
+                    return True
+    except Exception:
+        return False
+    return False
+
+
 def _looks_like_gs_usb(device) -> bool:
     if (device.idVendor, device.idProduct) in KNOWN_DEVICES:
         return True
     text = f"{_get_string(device, device.iManufacturer)} {_get_string(device, device.iProduct)}".lower()
-    return any(hint in text for hint in ("can", "candle", "gs_usb", "gs-usb"))
+    if text.strip():
+        return any(hint in text for hint in ("can", "candle", "gs_usb", "gs-usb"))
+    # Descriptors unavailable (device already claimed, or no strings): fall back
+    # to the interface shape so a busy adapter stays discoverable.
+    return _has_vendor_bulk_interface(device)
 
 
 def _matching_devices(
@@ -203,6 +224,7 @@ class CanFdBus:
 
     def __init__(self, selector: Optional[DeviceSelector] = None):
         self.selector = selector or DeviceSelector()
+        self.channel = int(self.selector.channel)
 
         self._device = None
         self._interface = None
@@ -278,7 +300,7 @@ class CanFdBus:
     def _read_capabilities(self):
         device = self._device
         try:
-            raw = bytes(device.ctrl_transfer(0xC1, BREQ_BT_CONST_EXT, 0, 0, 72))
+            raw = bytes(device.ctrl_transfer(0xC1, BREQ_BT_CONST_EXT, self.channel, 0, 72))
         except usb.core.USBError:
             raw = b""
         if len(raw) >= 72:
@@ -289,7 +311,7 @@ class CanFdBus:
             self.data_const = BitTimingConst(*values[10:18])
             return
 
-        raw = bytes(device.ctrl_transfer(0xC1, BREQ_BT_CONST, 0, 0, 40))
+        raw = bytes(device.ctrl_transfer(0xC1, BREQ_BT_CONST, self.channel, 0, 40))
         values = struct.unpack("<10I", raw[:40])
         self.feature = values[0]
         self.fclk_can = values[1]
@@ -301,7 +323,8 @@ class CanFdBus:
             raw = bytes(self._device.ctrl_transfer(0xC1, BREQ_DEVICE_CONFIG, 1, 0, 12))
             _r1, _r2, _r3, icount, sw_version, hw_version = struct.unpack("<4B2I", raw[:12])
             self.device_info = DeviceInfo(
-                icount=icount, sw_version=sw_version, hw_version=hw_version
+                icount=icount, sw_version=sw_version, hw_version=hw_version,
+                channel_count=icount + 1,
             )
         except (usb.core.USBError, struct.error):
             self.device_info = None
@@ -360,7 +383,7 @@ class CanFdBus:
 
     def _control_out(self, request: int, data: bytes):
         try:
-            return self._device.ctrl_transfer(0x41, request, 0, 0, data)
+            return self._device.ctrl_transfer(0x41, request, self.channel, 0, data)
         except usb.core.USBError as exc:
             raise CanFdError(f"control request {request} failed: {exc}") from exc
 
@@ -384,6 +407,7 @@ class CanFdBus:
             fd=frame.fd,
             brs=frame.brs and self.is_fd,
             remote=frame.remote,
+            channel=self.channel,
         )
 
         echo_id = 1 if echo else ECHO_NONE
@@ -436,6 +460,9 @@ class CanFdBus:
 
     def is_started(self) -> bool:
         return self._started
+
+    def channel_count(self) -> int:
+        return self.device_info.channel_count if self.device_info is not None else 1
 
     def close(self) -> None:
         self.stop()

@@ -195,7 +195,9 @@ canfd_close(bus);
 ```
 
 Async receive uses `canfd_start(bus, callback, user)` / `canfd_stop(bus)`; the
-callback runs on the library's receive thread. See `tests/test_c_api.cpp`.
+callback runs on the library's receive thread. `canfd_open(index)` opens the first
+discovered adapter; use `canfd_open_channel(vid, pid, index, channel)` to pin
+specific ids (0 = any) and a CAN channel. See `tests/test_c_api.cpp`.
 
 ## CLI
 
@@ -309,12 +311,20 @@ covered by hardware-free unit tests; see `python/README.md` for details.
 
 ## Notes
 
+* Adapters are auto-discovered by default: known gs_usb USB ids plus manufacturer/
+  product heuristics (`scanAdapters()`). Pass a `DeviceSelector` with explicit
+  `vid`/`pid` to pin a specific adapter.
+* Multi-channel devices: select a channel with `DeviceSelector::channel` (C++),
+  `DeviceSelector(channel=...)` (Python) or `--channel C` (both CLIs);
+  `channelCount()` / `channel_count()` reports how many the device has.
 * `receive()` returns every frame the adapter sees, including the adapter's own TX echo.
   Filter with `CanFrame::echo` and/or the ID.
 * Hardware timestamps are used when the device advertises
   `GS_CAN_FEATURE_HW_TIMESTAMP`; RX buffers are then 80 bytes.
 * `CanFdBus` owns an exclusive USB handle and is not meant to be shared across threads
   for concurrent `send`/`receive`; the callback mode runs on one internal thread.
+* Non-ISO CAN FD is not part of the standard gs_usb protocol (candleLight is ISO-only,
+  there is no mode bit for it), so it is not supported.
 
 ## License
 

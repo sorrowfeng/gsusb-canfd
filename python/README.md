@@ -56,8 +56,11 @@ for i, adapter in enumerate(scan_adapters()):
           adapter.serial)
 ```
 
-Select one with a `DeviceSelector` (`vid`, `pid`, `index`, `serial`, `product`).
-Defaults target `0xA8FA:0x8598`.
+Select one with a `DeviceSelector` (`vid`, `pid`, `index`, `channel`, `serial`,
+`product`). By default any gs_usb adapter is auto-discovered (known USB ids plus
+descriptor heuristics); pass explicit `vid`/`pid` to pin one. On devices with
+several CAN channels, `channel` selects which one (`bus.channel_count()` reports
+the count).
 
 ## CLI
 

@@ -46,6 +46,8 @@ int main() {
   check(canfd_is_fd(nullptr) == 0, "is_fd(null)");
   check(canfd_feature(nullptr) == 0, "feature(null)");
   check(canfd_clock_frequency(nullptr) == 0, "clock(null)");
+  check(canfd_channel_count(nullptr) == 0, "channel_count(null)");
+  check(canfd_channel(nullptr) == -1, "channel(null)");
   check(canfd_endpoints(nullptr, nullptr, nullptr) == CANFD_ERROR, "endpoints(null)");
 
   canfd_stop(nullptr);

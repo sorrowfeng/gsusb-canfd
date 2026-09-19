@@ -79,7 +79,7 @@ std::vector<uint8_t> encodeFrame(const CanFrame& frame, uint32_t echo_id) {
   putU32Le(out.data() + 0, echo_id);
   putU32Le(out.data() + 4, can_id);
   out[8] = dlc;
-  out[9] = 0;
+  out[9] = frame.channel;
   out[10] = flags;
   out[11] = 0;
 

@@ -55,3 +55,10 @@ def test_classic_hardware_timestamp_offset():
     assert decoded.fd is False
     assert decoded.data == b"\xAA\xBB"
     assert abs(decoded.timestamp - 0.0025) < 1e-9
+
+
+def test_channel_is_preserved():
+    frame = CanFrame(id=0x123, data=b"\x01", fd=True, channel=2)
+    encoded = encode_frame(frame, echo_id=ECHO_NONE)
+    decoded = decode_frame(encoded, hw_timestamp=False)
+    assert decoded.channel == 2

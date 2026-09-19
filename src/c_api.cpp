@@ -109,11 +109,16 @@ int canfd_scan(CanFdAdapterInfo* out, int max) {
 }
 
 CanFdHandle* canfd_open_vid_pid(uint16_t vid, uint16_t pid, int index) {
+  return canfd_open_channel(vid, pid, index, 0);
+}
+
+CanFdHandle* canfd_open_channel(uint16_t vid, uint16_t pid, int index, int channel) {
   try {
     canfd::DeviceSelector selector;
     selector.vid = vid;
     selector.pid = pid;
     selector.index = index;
+    selector.channel = static_cast<uint8_t>(channel < 0 ? 0 : channel);
     auto* handle = new CanFdHandle(selector);
     handle->bus.open();
     return handle;
@@ -124,7 +129,7 @@ CanFdHandle* canfd_open_vid_pid(uint16_t vid, uint16_t pid, int index) {
 }
 
 CanFdHandle* canfd_open(int index) {
-  return canfd_open_vid_pid(canfd::kDefaultVid, canfd::kDefaultPid, index);
+  return canfd_open_channel(canfd::kAnyVid, canfd::kAnyPid, index, 0);
 }
 
 int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config) {
@@ -245,6 +250,14 @@ uint32_t canfd_feature(CanFdHandle* handle) {
 
 uint32_t canfd_clock_frequency(CanFdHandle* handle) {
   return handle != nullptr ? handle->bus.clockFrequency() : 0;
+}
+
+uint32_t canfd_channel_count(CanFdHandle* handle) {
+  return handle != nullptr ? handle->bus.channelCount() : 0;
+}
+
+int canfd_channel(CanFdHandle* handle) {
+  return handle != nullptr ? static_cast<int>(handle->bus.channel()) : -1;
 }
 
 int canfd_endpoints(CanFdHandle* handle, int* ep_in, int* ep_out) {

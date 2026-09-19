@@ -17,6 +17,10 @@ namespace canfd {
 constexpr uint16_t kDefaultVid = 0xA8FA;
 constexpr uint16_t kDefaultPid = 0x8598;
 
+/* Passing kAnyVid/kAnyPid selects any gs_usb-looking adapter. */
+constexpr uint16_t kAnyVid = 0;
+constexpr uint16_t kAnyPid = 0;
+
 namespace feature {
 constexpr uint32_t kListenOnly = 1u << 0;
 constexpr uint32_t kLoopback = 1u << 1;
@@ -39,9 +43,10 @@ struct AdapterInfo {
 };
 
 struct DeviceSelector {
-  uint16_t vid = kDefaultVid;
-  uint16_t pid = kDefaultPid;
+  uint16_t vid = kAnyVid;
+  uint16_t pid = kAnyPid;
   int index = 0;
+  uint8_t channel = 0;
   std::optional<std::string> serial;
   std::optional<std::string> product;
 };
@@ -50,6 +55,7 @@ struct DeviceInfo {
   uint32_t icount = 0;
   uint32_t sw_version = 0;
   uint32_t hw_version = 0;
+  uint32_t channel_count = 1;
 };
 
 struct BusConfig {
@@ -95,6 +101,8 @@ class CanFdBus {
   const DeviceInfo& deviceInfo() const;
   uint32_t feature() const;
   uint32_t clockFrequency() const;
+  uint32_t channelCount() const;
+  uint8_t channel() const;
   const BitTiming& nominalTiming() const;
   const BitTiming& dataTiming() const;
   int inputEndpoint() const;

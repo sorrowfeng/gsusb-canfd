@@ -51,10 +51,11 @@ std::string AdapterInfo::name() const {
 }
 
 struct CanFdBus::Impl {
-  explicit Impl(const DeviceSelector& sel) : selector(sel) {}
+  explicit Impl(const DeviceSelector& sel) : selector(sel), channel(sel.channel) {}
 
   DeviceSelector selector;
   std::unique_ptr<UsbTransport> transport;
+  uint8_t channel = 0;
 
   uint32_t feature = 0;
   uint32_t fclk_can = 0;
@@ -88,7 +89,7 @@ struct CanFdBus::Impl {
     std::vector<uint8_t> buffer(72, 0);
     int received = 0;
     try {
-      received = transport->controlIn(gs_usb::kBreqBtConstExt, 0, 0, buffer.data(), 72);
+      received = transport->controlIn(gs_usb::kBreqBtConstExt, channel, 0, buffer.data(), 72);
     } catch (const CanFdError&) {
       received = 0;
     }
@@ -103,7 +104,7 @@ struct CanFdBus::Impl {
 
     std::vector<uint8_t> legacy(40, 0);
     const int legacy_received =
-        transport->controlIn(gs_usb::kBreqBtConst, 0, 0, legacy.data(), 40);
+        transport->controlIn(gs_usb::kBreqBtConst, channel, 0, legacy.data(), 40);
     if (legacy_received < 40) {
       throw CanFdError("device did not report bit timing constants");
     }
@@ -123,6 +124,7 @@ struct CanFdBus::Impl {
         device_info.icount = buffer[3];
         device_info.sw_version = readU32Le(buffer.data() + 4);
         device_info.hw_version = readU32Le(buffer.data() + 8);
+        device_info.channel_count = device_info.icount + 1;
         has_device_info = true;
       }
     } catch (const CanFdError&) {
@@ -176,7 +178,8 @@ void CanFdBus::configure(const BusConfig& config) {
   impl_->nominal_timing = calculateBitTiming(config.bitrate, config.sample_point,
                                              impl_->fclk_can, impl_->nominal_const);
   const auto nominal_bytes = impl_->nominal_timing.toBytes();
-  impl_->transport->controlOut(gs_usb::kBreqBittiming, 0, 0, nominal_bytes.data(), 20);
+  impl_->transport->controlOut(gs_usb::kBreqBittiming, impl_->channel, 0, nominal_bytes.data(),
+                               20);
 
   if (fd) {
     if (!impl_->has_data_const) {
@@ -185,7 +188,8 @@ void CanFdBus::configure(const BusConfig& config) {
     impl_->data_timing = calculateBitTiming(config.data_bitrate, config.data_sample_point,
                                             impl_->fclk_can, impl_->data_const);
     const auto data_bytes = impl_->data_timing.toBytes();
-    impl_->transport->controlOut(gs_usb::kBreqDataBittiming, 0, 0, data_bytes.data(), 20);
+    impl_->transport->controlOut(gs_usb::kBreqDataBittiming, impl_->channel, 0,
+                                 data_bytes.data(), 20);
   }
 
   impl_->is_fd = fd;
@@ -228,7 +232,7 @@ void CanFdBus::configure(const BusConfig& config) {
   mode[5] = static_cast<uint8_t>((flags >> 8) & 0xFF);
   mode[6] = static_cast<uint8_t>((flags >> 16) & 0xFF);
   mode[7] = static_cast<uint8_t>((flags >> 24) & 0xFF);
-  impl_->transport->controlOut(gs_usb::kBreqMode, 0, 0, mode, 8);
+  impl_->transport->controlOut(gs_usb::kBreqMode, impl_->channel, 0, mode, 8);
   impl_->started = true;
 }
 
@@ -241,6 +245,7 @@ void CanFdBus::send(const CanFrame& frame) {
   if (frame.fd && !impl_->is_fd) {
     throw CanFdError("cannot send CAN FD frame on a classic CAN bus");
   }
+  out.channel = impl_->channel;
 
   const std::vector<uint8_t> encoded = encodeFrame(out, kEchoNone);
   impl_->transport->bulkWrite(encoded.data(), static_cast<int>(encoded.size()), 1000);
@@ -311,7 +316,7 @@ void CanFdBus::close() {
   if (impl_->started && impl_->transport->isOpen()) {
     const uint8_t reset[8] = {gs_usb::kModeReset, 0, 0, 0, 0, 0, 0, 0};
     try {
-      impl_->transport->controlOut(gs_usb::kBreqMode, 0, 0, reset, 8);
+      impl_->transport->controlOut(gs_usb::kBreqMode, impl_->channel, 0, reset, 8);
     } catch (const CanFdError&) {
     }
     impl_->started = false;
@@ -333,6 +338,10 @@ const DeviceInfo& CanFdBus::deviceInfo() const { return impl_->device_info; }
 uint32_t CanFdBus::feature() const { return impl_->feature; }
 
 uint32_t CanFdBus::clockFrequency() const { return impl_->fclk_can; }
+
+uint32_t CanFdBus::channelCount() const { return impl_->device_info.channel_count; }
+
+uint8_t CanFdBus::channel() const { return impl_->channel; }
 
 const BitTiming& CanFdBus::nominalTiming() const { return impl_->nominal_timing; }
 

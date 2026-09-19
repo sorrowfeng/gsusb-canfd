@@ -35,9 +35,10 @@ std::vector<uint8_t> parseData(const std::string& text) {
 }
 
 struct Options {
-  uint16_t vid = canfd::kDefaultVid;
-  uint16_t pid = canfd::kDefaultPid;
+  uint16_t vid = canfd::kAnyVid;
+  uint16_t pid = canfd::kAnyPid;
   int index = 0;
+  uint8_t channel = 0;
   canfd::BusConfig config;
   uint32_t id = 0;
   std::vector<uint8_t> data;
@@ -50,12 +51,13 @@ struct Options {
 std::string usage() {
   return "usage:\n"
          "  canfd list [--vid V] [--pid P]\n"
-         "  canfd send [--vid V] [--pid P] [--index N] [--classic] ID [HEXDATA]\n"
-         "  canfd monitor [--vid V] [--pid P] [--index N] [--classic]\n"
+         "  canfd send [--vid V] [--pid P] [--index N] [--channel C] [--classic] ID [HEXDATA]\n"
+         "  canfd monitor [--vid V] [--pid P] [--index N] [--channel C] [--classic]\n"
          "                [--bitrate B] [--sample-point S]\n"
          "                [--data-bitrate B] [--data-sample-point S]\n"
          "                [--trigger] [--trigger-id ID] [--trigger-data HEX]\n"
-         "                [--count N]\n";
+         "                [--count N]\n"
+         "  --vid/--pid default to 0 (any gs_usb adapter)\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& opts) {
@@ -74,6 +76,8 @@ bool parseArgs(int argc, char** argv, Options& opts) {
       opts.pid = static_cast<uint16_t>(std::strtoul(next("--pid").c_str(), nullptr, 0));
     } else if (arg == "--index") {
       opts.index = std::atoi(next("--index").c_str());
+    } else if (arg == "--channel") {
+      opts.channel = static_cast<uint8_t>(std::atoi(next("--channel").c_str()));
     } else if (arg == "--bitrate") {
       opts.config.bitrate = std::strtoul(next("--bitrate").c_str(), nullptr, 0);
     } else if (arg == "--sample-point") {
@@ -145,6 +149,7 @@ int run(bool monitor, Options& opts) {
   selector.vid = opts.vid;
   selector.pid = opts.pid;
   selector.index = opts.index;
+  selector.channel = opts.channel;
 
   canfd::CanFdBus bus(selector);
   bus.open();

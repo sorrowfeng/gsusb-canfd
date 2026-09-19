@@ -211,7 +211,7 @@ def encode_frame(frame: CanFrame, echo_id: int = ECHO_NONE) -> bytes:
 
     can_dlc = length_to_dlc(len(frame.data), fd)
     payload_size = FD_DATA_SIZE if fd else CLASSIC_DATA_SIZE
-    header = struct.pack("<IIBBBB", echo_id, can_id, can_dlc, 0, flags, 0)
+    header = struct.pack("<IIBBBB", echo_id, can_id, can_dlc, frame.channel, flags, 0)
     payload = bytes(frame.data) + bytes(payload_size - len(frame.data))
     return header + payload
 

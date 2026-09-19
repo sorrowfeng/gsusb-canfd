@@ -99,6 +99,8 @@ CANFD_API int canfd_scan(CanFdAdapterInfo* out, int max);
 
 CANFD_API CanFdHandle* canfd_open(int index);
 CANFD_API CanFdHandle* canfd_open_vid_pid(uint16_t vid, uint16_t pid, int index);
+/* vid/pid 0 means "any adapter"; channel selects a CAN channel on the device. */
+CANFD_API CanFdHandle* canfd_open_channel(uint16_t vid, uint16_t pid, int index, int channel);
 
 CANFD_API int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config);
 CANFD_API int canfd_send(CanFdHandle* handle, const CanFdFrame* frame);
@@ -113,6 +115,8 @@ CANFD_API int canfd_is_started(CanFdHandle* handle);
 CANFD_API int canfd_is_fd(CanFdHandle* handle);
 CANFD_API uint32_t canfd_feature(CanFdHandle* handle);
 CANFD_API uint32_t canfd_clock_frequency(CanFdHandle* handle);
+CANFD_API uint32_t canfd_channel_count(CanFdHandle* handle);
+CANFD_API int canfd_channel(CanFdHandle* handle);
 CANFD_API int canfd_endpoints(CanFdHandle* handle, int* ep_in, int* ep_out);
 
 #ifdef __cplusplus

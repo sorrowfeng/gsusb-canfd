@@ -89,7 +89,28 @@ bool hasVendorBulkInterface(libusb_device* device) {
   return found;
 }
 
+bool isKnownGsUsbId(uint16_t vid, uint16_t pid) {
+  static const uint16_t kKnown[][2] = {
+      {0x1D50, 0x606F},  // Geschwister Schneider / candleLight
+      {0x1209, 0x2323},  // candleLight
+      {0x1CD2, 0x606F},  // CES CANext FD
+      {0x16D0, 0x10B8},  // ABE CAN Debugger FD
+      {0x1209, 0xCA01},  // Cannectivity
+      {0xA8FA, 0x8598},  // Com Equipment CANFD Analyser
+  };
+  for (const auto& known : kKnown) {
+    if (known[0] == vid && known[1] == pid) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool looksLikeGsUsb(const AdapterInfo& info, libusb_device* device) {
+  if (isKnownGsUsbId(info.vendor_id, info.product_id)) {
+    return true;
+  }
+
   const bool have_descriptors = !info.manufacturer.empty() || !info.product.empty();
   if (have_descriptors) {
     const std::string text = toLower(info.manufacturer + " " + info.product);
