@@ -26,10 +26,12 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
   Python (`python/`, package `gsusb_canfd`)
 * CAN and CAN FD (ISO), standard and extended IDs, RTR
 * Arbitrary bitrates derived from the adapter's clock and sample-point target
-* Blocking `receive()` **and** background-thread callback mode
-* Hardware timestamps, listen-only, loopback, one-shot
+* Blocking `receive()` **and** background-thread callback mode (preferred for
+  continuous traffic)
+* Hardware timestamps with a host-clock fallback, listen-only, loopback, one-shot
 * Stable C ABI (`include/canfd/canfd.h`) for ctypes/cffi, Rust FFI, C#, ...
-* Adapter auto-discovery and multi-channel selection
+* Adapter auto-discovery, multi-channel selection and typed errors
+* Installable CMake package (`find_package(gsusb-canfd)`) or `add_subdirectory`
 * `canfd` (C++) and `gsusb-canfd` (Python) CLIs (`list` / `send` / `monitor`),
   plus a hardware demo and an interactive terminal
 
@@ -38,10 +40,12 @@ It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 * CMake >= 3.16 and a C++17 compiler
 * libusb-1.0
 
-libusb is found automatically, in this order: `pkg-config`, an installed CMake
-package, then `find_path`/`find_library`. If none of those work, point CMake at
-your installation with `-DLIBUSB_ROOT=<dir>` (a directory containing `include/`
-and `lib/`) or the standard `CMAKE_PREFIX_PATH`.
+libusb is found automatically, in this order: an explicit
+`-DCANFD_LIBUSB_INCLUDE_DIR`/`-DCANFD_LIBUSB_LIBRARY` pair, `pkg-config`, an
+installed CMake package, then `find_path`/`find_library`. The last one also
+understands the layout of the **official libusb Windows release** (header at
+`include/libusb/libusb.h`, import libraries under `MS64/static`,
+`MinGW64/static`, ...), so extracting the 7z and pointing at it just works:
 
 ```bash
 # macOS
@@ -143,17 +147,41 @@ A frame this adapter transmits also comes back as a loopback, but it only carrie
 the marker when the sender asked for it: `bus.send(frame, /*echo=*/true)` makes it
 arrive with `CanFrame::echo == true`, while the default (`bus.send(frame)`) leaves
 it indistinguishable from received traffic. Unless you opted in, filter on
-`frame.id`.
+`frame.id`. Set `BusConfig::drop_echo = true` to have the receive path discard
+echo-tagged loopbacks for you.
 
-Callback mode instead of polling:
+### Prefer `start(callback)` for continuous traffic
+
+`receive()` performs **one USB bulk read per call**; a hand-written loop that
+does `receive()` and then sleeps can fall behind the arrival rate and let the
+adapter's RX FIFO overflow, which shows up as missed replies (a request's answer
+arrives ~150 µs after it is sent, so it is the first thing a full FIFO drops).
+`start()` runs an internal drain loop — it keeps reading while frames are
+available — so use it for anything busier than occasional polling:
 
 ```cpp
-bus.start([](const canfd::CanFrame& frame) { /* runs on an internal thread */ });
+bus.start([](const canfd::CanFrame& frame) {
+  // called on the library's receive thread, one frame after another
+});
 // ...
 bus.stop();
 ```
 
+If you must poll, do not sleep between frames; keep calling `receive()` until it
+returns `false` (timeout) and only then back off.
+
 ## Integrate into an existing CMake project
+
+**Installed package**
+
+```bash
+cmake --install <build-dir> --prefix <prefix>
+```
+
+```cmake
+find_package(gsusb-canfd REQUIRED)
+target_link_libraries(your_app PRIVATE canfd::canfd)
+```
 
 **Git submodule**
 
@@ -165,6 +193,11 @@ git submodule add <repo-url> third_party/gsusb-canfd
 add_subdirectory(third_party/gsusb-canfd)
 target_link_libraries(your_app PRIVATE canfd::canfd)
 ```
+
+Embedded this way only the `canfd` target is built by default; the tools,
+examples and tests (and test registration) are top-level-only. Set
+`-DCANFD_BUILD_TOOLS=ON` etc. to opt in, and `-DCANFD_BUILD_SHARED=ON` to build
+a shared library.
 
 **FetchContent**
 
@@ -181,8 +214,10 @@ To build only what you need pass `-DCANFD_BUILD_TESTS=OFF -DCANFD_BUILD_TOOLS=OF
 
 `include/canfd/canfd.h` exposes a stable, opaque C interface for callers that cannot
 use C++ (ctypes/cffi, Rust FFI, C#, ...). Functions never throw: they return
-`CANFD_OK` / `CANFD_ERROR`, and `canfd_last_error()` carries the message. Build a
-shared library with `-DBUILD_SHARED_LIBS=ON` to load it dynamically.
+`CANFD_OK` / `CANFD_ERROR`, `canfd_last_error()` carries the message and
+`canfd_last_error_code()` a `CANFD_ERRC_*` class. Build a shared library with
+`-DCANFD_BUILD_SHARED=ON` (which defaults to `BUILD_SHARED_LIBS`) to load it
+dynamically.
 
 ```c
 #include "canfd/canfd.h"
@@ -370,12 +405,13 @@ for the API and [`python/PUBLISHING.md`](python/PUBLISHING.md) for releasing.
 ## Repository layout
 
 ```
-include/canfd/   public C++ headers and the C ABI (canfd.h)
+include/canfd/   public C++ headers, the C ABI (canfd.h) and error.hpp
 src/             library implementation
 tools/           canfd CLI and interactive terminal
 examples/        C++ examples
 tests/           C++ unit tests
 python/          pure-Python package, CLI, tests and publishing docs
+cmake/           libusb discovery and the installed package config
 scripts/         helper build scripts
 ```
 
@@ -385,7 +421,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and submit changes
 
 * Adapters are auto-discovered by default: known gs_usb USB ids plus manufacturer/
   product heuristics (`scanAdapters()`). Pass a `DeviceSelector` with explicit
-  `vid`/`pid` to pin a specific adapter.
+  `vid`/`pid`, or `open(AdapterInfo)` / `open(adapter)` to reopen the exact unit a
+  scan returned (`index` selects the N-th adapter that matches the selector
+  filters, in enumeration order). `AdapterInfo::uniqueName()` gives a label with
+  the USB ids and serial.
 * Multi-channel devices: select a channel with `DeviceSelector::channel` (C++),
   `DeviceSelector(channel=...)` (Python) or `--channel C` (both CLIs);
   `channelCount()` / `channel_count()` reports how many the device has.
@@ -394,13 +433,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and submit changes
   `send(frame, true)` (C++) / `send(frame, echo=True)` (Python) /
   `canfd_send_echo()` (C ABI) make it arrive with `echo` set. Otherwise filter on
   the ID, because an untagged loopback is indistinguishable from received traffic.
+  `BusConfig::drop_echo` discards echo-tagged loopbacks on the receive path.
 * Hardware timestamps are used when the device advertises
-  `GS_CAN_FEATURE_HW_TIMESTAMP`; RX buffers are then 80 bytes.
+  `GS_CAN_FEATURE_HW_TIMESTAMP` (RX buffers are then 80 bytes). When no usable
+  hardware timestamp is present, `CanFrame::timestamp` falls back to the host
+  monotonic clock in seconds, so it is always non-zero and non-decreasing.
+* Errors are typed: `canfd::NotFoundError` / `TimeoutError` / `BusError` /
+  `ArgumentError` (all `CanFdError`), with `code()`; the C ABI exposes the class
+  through `canfd_last_error_code()`.
 * `CanFdBus` owns an exclusive USB handle and is not meant to be shared across threads
   for concurrent `send`/`receive`; the callback mode runs on one internal thread.
 * Non-ISO CAN FD is a real CAN FD variant, but the standard gs_usb protocol exposes
   only a single FD mode bit (candleLight firmware is ISO-only). Selecting non-ISO
   requires vendor-specific control that this library does not implement.
+* Naming: the project, repository and Python distribution are `gsusb-canfd` /
+  `gsusb_canfd`, but the C++ namespace and CMake target are `canfd`
+  (`canfd::canfd`) and the C API is `canfd_*` / `CanFd*` / `CANFD_*`. This is
+  intentional (the short names predate the repository name) and kept for
+  compatibility; be aware a host project may already use a `canfd_send`-style
+  name of its own.
 
 ## License
 

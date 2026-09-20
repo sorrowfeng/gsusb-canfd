@@ -6,12 +6,13 @@ bug reports, feature requests, documentation fixes and pull requests.
 ## Project layout
 
 ```
-include/canfd/   public C++ headers and the C ABI (canfd.h)
+include/canfd/   public C++ headers, the C ABI (canfd.h) and error.hpp
 src/             C++ library implementation
 tools/           canfd CLI and interactive terminal
 examples/        C++ examples
 tests/           C++ unit tests
 python/          pure-Python package (gsusb_canfd), CLI and tests
+cmake/           libusb discovery and the installed package config
 scripts/         helper build scripts
 ```
 
