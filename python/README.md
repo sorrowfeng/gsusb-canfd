@@ -22,6 +22,11 @@ pip install ./python
 The distribution is named `gsusb-canfd`; the import name is `gsusb_canfd`.
 
 Requires `libusb-1.0` at runtime (`brew install libusb`, `apt install libusb-1.0-0-dev`).
+On Windows there is no system copy to find: put the directory holding `libusb-1.0.dll`
+on `PATH`. `pyusb` looks the DLL up through `ctypes.util.find_library()`, which
+searches `PATH` only, so a copy sitting next to `python.exe` is not found. Importing
+the package works with no DLL present — libusb is resolved lazily, when a device is
+opened.
 
 ## Use
 
@@ -40,6 +45,11 @@ with bus:
         if frame and not frame.echo and frame.id == 0x481:
             print(frame)
 ```
+
+A frame this adapter sent comes back as a loopback, but it only carries the marker
+when you asked for it: `send(frame, echo=True)` makes it arrive with
+`frame.echo is True`, while the default (`echo=False`) leaves it indistinguishable
+from received traffic. Unless you opted in, filter on `frame.id`.
 
 Extended frames: set `id > 0x7FF` or `CanFrame(extended=True)`.
 

@@ -27,8 +27,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regression tests for the timeout handling (`python/tests/test_timeout.py`).
   They need neither hardware nor libusb and fail against the previous
   behaviour.
-- The Python CI job now runs on Windows as well, and asserts that importing
-  the package works without libusb installed.
+- The Python CI job now runs on Windows and macOS as well, and asserts that
+  importing the package works without libusb installed.
+
+### Documentation
+
+- Python on Windows: the directory holding `libusb-1.0.dll` has to be on `PATH`,
+  because `pyusb` resolves the DLL through `ctypes.util.find_library()`, which
+  searches `PATH` only — a copy next to `python.exe` is not picked up. Importing
+  the package is now documented as working with no DLL present at all.
+- Corrected the note on TX echo. A loopback is only marked as one when the sender
+  asked for a tag; the default send path writes `kEchoNone` (`0xFFFFFFFF`), so a
+  frame from your own adapter arrives looking like ordinary received traffic and
+  has to be filtered by ID. Python's `send(..., echo=True)` is the only way to opt
+  in — the C++ `send()` takes no tag parameter.
 
 ## [0.1.1] - 2026-09-20
 

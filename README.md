@@ -317,6 +317,20 @@ To work on the package itself, install the checkout instead:
 pip install ./python
 ```
 
+On Windows there is no system libusb to pick up, and `pyusb` resolves the DLL
+through `ctypes.util.find_library()`, which **searches `PATH` only** — dropping
+`libusb-1.0.dll` next to `python.exe` is not enough. Put the directory holding it on
+`PATH`, for example the `build/` directory produced by `scripts/build_windows.sh`, or
+an extracted [libusb release](https://github.com/libusb/libusb/releases):
+
+```bat
+set PATH=C:\path\to\libusb\bin;%PATH%
+```
+
+Importing the package never needs it: libusb is resolved lazily on the first device
+open, so `import gsusb_canfd` works on a machine with no libusb installed — only
+opening a device needs the DLL.
+
 ```bash
 gsusb-canfd list
 gsusb-canfd monitor --trigger --trigger-id 501 --trigger-data 00025001
