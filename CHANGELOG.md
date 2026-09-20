@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Python: a bulk read that simply ran out of time is no longer reported as a
+  fatal error on Windows. pyusb surfaces an idle bus as errno 10060
+  (`WSAETIMEDOUT`, "Operation timed out"), which the previous check --
+  `errno in (60, 110)` or a literal `"timeout"` -- did not recognise. The
+  consequences were that `receive()` raised `CanFdError` instead of returning
+  `None`, the `start()` receive thread stopped at the first idle moment and
+  never recovered, and `gsusb-canfd monitor` exited with an error as soon as
+  the bus went quiet.
+- `scripts/build_windows.sh` passed POSIX paths to CMake's `-S`/`-B`/`--build`
+  and to `ctest --test-dir`, so the documented Windows build failed during
+  configure. The paths now go through the script's existing `to_windows`
+  helper.
+
+### Added
+
+- Regression tests for the timeout handling (`python/tests/test_timeout.py`).
+  They need neither hardware nor libusb and fail against the previous
+  behaviour.
+- The Python CI job now runs on Windows as well, and asserts that importing
+  the package works without libusb installed.
+
 ## [0.1.1] - 2026-09-20
 
 ### Added
