@@ -12,9 +12,21 @@ endif()
 project(gsusb-canfd VERSION ${CANFD_VERSION} LANGUAGES CXX
         DESCRIPTION "Cross-platform userspace gs_usb CAN FD library")
 
-option(CANFD_BUILD_TESTS "Build the test suite" ON)
-option(CANFD_BUILD_TOOLS "Build the canfd command line tool" ON)
-option(CANFD_BUILD_EXAMPLES "Build the examples" ON)
+# Only build the tools/examples/tests when this is the top-level project.
+# Embedded via add_subdirectory() a parent should get just the library target
+# unless it explicitly opts in, and must not have test registration or the
+# shared/static choice forced on it.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(_canfd_top_level ON)
+else()
+  set(_canfd_top_level OFF)
+endif()
+
+option(CANFD_BUILD_TESTS "Build the test suite" ${_canfd_top_level})
+option(CANFD_BUILD_TOOLS "Build the canfd command line tool" ${_canfd_top_level})
+option(CANFD_BUILD_EXAMPLES "Build the examples" ${_canfd_top_level})
+option(CANFD_BUILD_SHARED
+       "Build the library as a shared library (defaults to BUILD_SHARED_LIBS)" ${BUILD_SHARED_LIBS})
 option(CANFD_STATIC_RUNTIME
        "Link the C/C++ runtime statically (Windows: keeps libusb-1.0.dll as the only dependency)" OFF)
 
@@ -112,12 +124,21 @@ if(NOT CANFD_LIBUSB_TARGET)
     "-DCANFD_LIBUSB_LIBRARY=...")
 endif()
 
-add_library(canfd
+set(CANFD_SOURCES
   src/bit_timing.cpp
   src/frame.cpp
   src/usb_transport.cpp
   src/device.cpp
   src/c_api.cpp)
+
+# The library type follows CANFD_BUILD_SHARED, not BUILD_SHARED_LIBS, so a
+# parent project can embed us without having to stash and restore its own
+# BUILD_SHARED_LIBS around add_subdirectory().
+if(CANFD_BUILD_SHARED)
+  add_library(canfd SHARED ${CANFD_SOURCES})
+else()
+  add_library(canfd STATIC ${CANFD_SOURCES})
+endif()
 add_library(canfd::canfd ALIAS canfd)
 
 # Generated version header, kept in sync with CANFD_VERSION above.
@@ -138,7 +159,7 @@ set_target_properties(canfd PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(canfd PRIVATE ${CANFD_LIBUSB_TARGET})
 target_link_libraries(canfd PRIVATE Threads::Threads)
 
-if(BUILD_SHARED_LIBS)
+if(CANFD_BUILD_SHARED)
   target_compile_definitions(canfd PRIVATE CANFD_SHARED)
 else()
   target_compile_definitions(canfd PUBLIC CANFD_STATIC)
@@ -167,7 +188,7 @@ if(CANFD_BUILD_EXAMPLES)
   target_link_libraries(canfd_demo PRIVATE canfd::canfd)
 endif()
 
-if(CANFD_BUILD_TESTS)
+if(CANFD_BUILD_TESTS AND _canfd_top_level)
   enable_testing()
 
   foreach(test_name test_bit_timing test_frame test_c_api)

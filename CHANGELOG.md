@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `add_subdirectory(gsusb-canfd)` no longer pollutes the parent project: the
+  `CANFD_BUILD_TESTS`/`CANFD_BUILD_TOOLS`/`CANFD_BUILD_EXAMPLES` options default
+  to ON only when this is the top-level project, tests are only registered at
+  the top level, and the library type now follows the new `CANFD_BUILD_SHARED`
+  option (defaulting to `BUILD_SHARED_LIBS`) instead of reading
+  `BUILD_SHARED_LIBS` directly. Standalone builds are unchanged.
+
 ### Fixed
 
 - CMake: `-DLIBUSB_ROOT=<dir>` now works with the official libusb Windows
