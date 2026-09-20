@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `CanFrame::timestamp` (C++) and `CanFrame.timestamp` (Python) are now always
+  meaningful: when the adapter does not provide a usable hardware timestamp
+  (not requested, absent from the frame, or left at zero by the firmware) it
+  falls back to the host monotonic clock in seconds instead of staying at 0 or
+  `None`.
 - `add_subdirectory(gsusb-canfd)` no longer pollutes the parent project: the
   `CANFD_BUILD_TESTS`/`CANFD_BUILD_TOOLS`/`CANFD_BUILD_EXAMPLES` options default
   to ON only when this is the top-level project, tests are only registered at

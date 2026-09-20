@@ -62,3 +62,18 @@ def test_channel_is_preserved():
     encoded = encode_frame(frame, echo_id=ECHO_NONE)
     decoded = decode_frame(encoded, hw_timestamp=False)
     assert decoded.channel == 2
+
+
+def test_timestamp_falls_back_to_host_clock():
+    frame = CanFrame(id=0x10, data=b"\x01", fd=True)
+    encoded = encode_frame(frame, echo_id=ECHO_NONE)
+
+    first = decode_frame(encoded, hw_timestamp=False)
+    second = decode_frame(encoded, hw_timestamp=False)
+    assert first.timestamp > 0.0
+    assert second.timestamp >= first.timestamp
+
+    # A zero hardware timestamp is treated the same as a missing one.
+    zero_hw = bytearray(encoded)
+    zero_hw.extend(b"\x00\x00\x00\x00")
+    assert decode_frame(bytes(zero_hw), hw_timestamp=True).timestamp > 0.0

@@ -116,6 +116,27 @@ void testTimestamp() {
   check(std::fabs(decoded.timestamp - 0.001) < 1e-9, "hardware timestamp decoded in seconds");
 }
 
+/* Adapters that do not report a hardware timestamp (and firmware that leaves it
+   at zero) must still produce a usable timestamp: the host monotonic clock. */
+void testTimestampFallback() {
+  canfd::CanFrame frame;
+  frame.id = 0x10;
+  frame.fd = true;
+  frame.size = 1;
+  const auto encoded = canfd::encodeFrame(frame, canfd::kEchoNone);
+
+  const auto first = canfd::decodeFrame(encoded.data(), encoded.size(), false);
+  const auto second = canfd::decodeFrame(encoded.data(), encoded.size(), false);
+  check(first.timestamp > 0.0, "fallback timestamp is non-zero");
+  check(second.timestamp >= first.timestamp, "fallback timestamp is monotonic");
+
+  // A zero hardware timestamp is treated the same as a missing one.
+  auto zero_hw = encoded;
+  zero_hw.resize(canfd::kHeaderSize + canfd::kMaxPayload + 4, 0);
+  const auto from_zero_hw = canfd::decodeFrame(zero_hw.data(), zero_hw.size(), true);
+  check(from_zero_hw.timestamp > 0.0, "zero hardware timestamp falls back to host clock");
+}
+
 }  // namespace
 
 int main() {
@@ -124,6 +145,7 @@ int main() {
   testRoundTripExtendedClassic();
   testEchoTag();
   testTimestamp();
+  testTimestampFallback();
   if (failures == 0) {
     std::printf("test_frame: OK\n");
   }

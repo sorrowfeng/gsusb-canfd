@@ -7,6 +7,7 @@ without any USB hardware or libusb present.
 from __future__ import annotations
 
 import struct
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -233,6 +234,12 @@ def decode_frame(buffer: bytes, hw_timestamp: bool) -> CanFrame:
     if hw_timestamp and len(buffer) >= HEADER_SIZE + payload_size + 4:
         ts_us = struct.unpack_from("<I", buffer, HEADER_SIZE + payload_size)[0]
         timestamp = ts_us / 1_000_000.0
+
+    if timestamp is None or timestamp <= 0.0:
+        # No usable hardware timestamp (not requested, absent from the buffer,
+        # or the firmware left it at zero): fall back to the host monotonic
+        # clock so CanFrame.timestamp is always meaningful.
+        timestamp = time.monotonic()
 
     return CanFrame(
         id=can_id & CAN_EFF_MASK,

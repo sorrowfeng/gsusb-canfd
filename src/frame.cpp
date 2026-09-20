@@ -1,5 +1,6 @@
 #include "canfd/frame.hpp"
 
+#include <chrono>
 #include <cstdio>
 
 #include "canfd/bit_timing.hpp"
@@ -10,6 +11,14 @@ namespace canfd {
 namespace {
 
 constexpr std::size_t kDlcToLen[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
+
+/* Host monotonic clock in seconds. Used when the adapter does not provide a
+   hardware timestamp, so CanFrame::timestamp is always meaningful and never
+   jumps backwards. */
+double hostMonotonicSeconds() {
+  using namespace std::chrono;
+  return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
 
 void putU32Le(uint8_t* out, uint32_t value) {
   out[0] = static_cast<uint8_t>(value & 0xFF);
@@ -122,6 +131,11 @@ CanFrame decodeFrame(const uint8_t* buffer, std::size_t length, bool hw_timestam
       const uint32_t ts_us = getU32Le(buffer + kHeaderSize + payload_size);
       frame.timestamp = static_cast<double>(ts_us) / 1'000'000.0;
     }
+  }
+  if (frame.timestamp <= 0.0) {
+    // No usable hardware timestamp (not requested, absent from the buffer, or
+    // the firmware did not fill it): fall back to the host monotonic clock.
+    frame.timestamp = hostMonotonicSeconds();
   }
   return frame;
 }
