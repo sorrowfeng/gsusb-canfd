@@ -79,6 +79,13 @@ class AdapterInfo:
             return " ".join(parts)
         return f"gs_usb {self.vendor_id:04X}:{self.product_id:04X}"
 
+    def display_name(self) -> str:
+        return f"{self.name()} ({self.vendor_id:04X}:{self.product_id:04X})"
+
+    def unique_name(self) -> str:
+        label = self.display_name()
+        return f"{label} SN:{self.serial}" if self.serial else label
+
 
 @dataclass
 class DeviceSelector:

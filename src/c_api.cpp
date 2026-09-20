@@ -99,6 +99,8 @@ int canfd_scan(CanFdAdapterInfo* out, int max) {
       out[i].bus = adapter.bus;
       out[i].address = adapter.address;
       copyString(out[i].name, sizeof(out[i].name), adapter.name());
+      copyString(out[i].display_name, sizeof(out[i].display_name), adapter.displayName());
+      copyString(out[i].unique_name, sizeof(out[i].unique_name), adapter.uniqueName());
       copyString(out[i].manufacturer, sizeof(out[i].manufacturer), adapter.manufacturer);
       copyString(out[i].product, sizeof(out[i].product), adapter.product);
       copyString(out[i].serial, sizeof(out[i].serial), adapter.serial);

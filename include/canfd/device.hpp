@@ -39,7 +39,13 @@ struct AdapterInfo {
   std::string product;
   std::string serial;
 
+  /* Short human label: "manufacturer product". */
   std::string name() const;
+  /* name() plus the USB ids: "manufacturer product (VID:PID)". */
+  std::string displayName() const;
+  /* displayName() plus the serial when present, for a label that identifies this
+     exact unit: "manufacturer product (VID:PID) SN:serial". */
+  std::string uniqueName() const;
 };
 
 struct DeviceSelector {

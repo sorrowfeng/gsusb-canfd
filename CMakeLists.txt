@@ -144,7 +144,7 @@ endif()
 if(CANFD_BUILD_TESTS AND _canfd_top_level)
   enable_testing()
 
-  foreach(test_name test_bit_timing test_frame test_c_api)
+  foreach(test_name test_bit_timing test_frame test_c_api test_adapter)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE canfd::canfd)
     add_test(NAME ${test_name} COMMAND ${test_name})

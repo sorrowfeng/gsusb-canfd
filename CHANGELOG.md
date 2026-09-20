@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BusConfig::drop_echo` (C++/Python) and `CanFdBusConfig::drop_echo` (C ABI):
   drop echo-tagged loopbacks from the receive path. Defaults to `false`; pair it
   with `send(frame, echo=true)` to keep your own TX out of the RX stream.
+- `AdapterInfo::displayName()` / `uniqueName()` (and the Python equivalents,
+  plus `display_name`/`unique_name` in the C ABI) for a device label that
+  includes the USB ids and, for `uniqueName()`, the serial number.
 
 ### Changed
 

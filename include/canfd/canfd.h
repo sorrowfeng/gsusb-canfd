@@ -51,7 +51,9 @@ typedef struct CanFdAdapterInfo {
   uint16_t product_id;
   uint8_t bus;
   uint8_t address;
-  char name[160];
+  char name[160];          /* "manufacturer product" */
+  char display_name[192];  /* name plus " (VID:PID)" */
+  char unique_name[288];   /* display_name plus " SN:serial" when known */
   char manufacturer[64];
   char product[64];
   char serial[64];

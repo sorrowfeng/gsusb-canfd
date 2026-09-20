@@ -50,6 +50,16 @@ std::string AdapterInfo::name() const {
   return buffer;
 }
 
+std::string AdapterInfo::displayName() const {
+  char ids[16];
+  std::snprintf(ids, sizeof(ids), " (%04X:%04X)", vendor_id, product_id);
+  return name() + ids;
+}
+
+std::string AdapterInfo::uniqueName() const {
+  return serial.empty() ? displayName() : displayName() + " SN:" + serial;
+}
+
 struct CanFdBus::Impl {
   explicit Impl(const DeviceSelector& sel) : selector(sel), channel(sel.channel) {}
 
