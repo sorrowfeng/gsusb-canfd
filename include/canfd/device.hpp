@@ -51,10 +51,17 @@ struct AdapterInfo {
 struct DeviceSelector {
   uint16_t vid = kAnyVid;
   uint16_t pid = kAnyPid;
+  /* 0-based position among the adapters that match the filters below, in libusb
+     enumeration order (not a global device number). When no filter is set,
+     index N is the N-th gs_usb-looking adapter. */
   int index = 0;
   uint8_t channel = 0;
   std::optional<std::string> serial;
   std::optional<std::string> product;
+  /* Exact USB location; only used when no serial is given. Handy to pin a unit
+     that exposes no serial number within one session. */
+  std::optional<uint8_t> bus;
+  std::optional<uint8_t> address;
 };
 
 struct DeviceInfo {
@@ -96,6 +103,9 @@ class CanFdBus {
   CanFdBus& operator=(CanFdBus&&) noexcept;
 
   void open();
+  /* Open the exact adapter described by `info` (from scanAdapters()). Prefers
+     the serial number; falls back to the USB bus/address when it has none. */
+  void open(const AdapterInfo& info);
   void configure(const BusConfig& config = BusConfig{});
   void send(const CanFrame& frame);
   /* Same, but asks the adapter to echo this frame back as a loopback: the copy

@@ -176,6 +176,25 @@ void CanFdBus::open() {
   impl_->readDeviceInfo();
 }
 
+void CanFdBus::open(const AdapterInfo& info) {
+  impl_->selector.vid = info.vendor_id;
+  impl_->selector.pid = info.product_id;
+  impl_->selector.index = 0;
+  if (!info.serial.empty()) {
+    // A serial is stable across ports, so it wins over the USB location.
+    impl_->selector.serial = info.serial;
+    impl_->selector.product.reset();
+    impl_->selector.bus.reset();
+    impl_->selector.address.reset();
+  } else {
+    impl_->selector.serial.reset();
+    impl_->selector.product.reset();
+    impl_->selector.bus = info.bus;
+    impl_->selector.address = info.address;
+  }
+  open();
+}
+
 void CanFdBus::configure(const BusConfig& config) {
   if (!impl_->transport || !impl_->transport->isOpen()) {
     throw CanFdError("call open() before configure()");

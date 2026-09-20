@@ -174,6 +174,16 @@ std::vector<FoundDevice> findDevices(libusb_context* context, const DeviceSelect
         toLower(info.product).find(toLower(*selector.product)) == std::string::npos) {
       continue;
     }
+    // bus/address only disambiguate when no serial was given, so a device that
+    // moves to another port is still found by its (stable) serial.
+    if (!selector.serial.has_value()) {
+      if (selector.bus.has_value() && info.bus != *selector.bus) {
+        continue;
+      }
+      if (selector.address.has_value() && info.address != *selector.address) {
+        continue;
+      }
+    }
     if (useHeuristics && !looksLikeGsUsb(info, device)) {
       continue;
     }

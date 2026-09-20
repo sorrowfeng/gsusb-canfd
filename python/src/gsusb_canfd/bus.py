@@ -91,10 +91,15 @@ class AdapterInfo:
 class DeviceSelector:
     vid: int = 0
     pid: int = 0
+    # 0-based position among the adapters matching the filters below, in
+    # enumeration order (not a global device number).
     index: int = 0
     channel: int = 0
     serial: Optional[str] = None
     product: Optional[str] = None
+    # Exact USB location; only used when no serial is given.
+    bus: Optional[int] = None
+    address: Optional[int] = None
 
 
 @dataclass
@@ -201,7 +206,12 @@ def _looks_like_gs_usb(device) -> bool:
 
 
 def _matching_devices(
-    vid: int, pid: int, serial: Optional[str], product: Optional[str]
+    vid: int,
+    pid: int,
+    serial: Optional[str],
+    product: Optional[str],
+    bus: Optional[int] = None,
+    address: Optional[int] = None,
 ) -> List:
     use_heuristic = vid == 0 and pid == 0
     found = []
@@ -214,6 +224,12 @@ def _matching_devices(
             continue
         if product is not None and product.lower() not in _get_string(device, device.iProduct).lower():
             continue
+        # bus/address only disambiguate when no serial was given.
+        if serial is None:
+            if bus is not None and int(device.bus) != bus:
+                continue
+            if address is not None and int(device.address) != address:
+                continue
         if use_heuristic and not _looks_like_gs_usb(device):
             continue
         found.append(device)
@@ -299,6 +315,8 @@ class CanFdBus:
             self.selector.pid,
             self.selector.serial,
             self.selector.product,
+            self.selector.bus,
+            self.selector.address,
         )
         if not devices:
             raise CanFdError(
@@ -311,7 +329,23 @@ class CanFdBus:
             )
         return devices[self.selector.index]
 
-    def open(self) -> "CanFdBus":
+    def open(self, adapter: Optional[AdapterInfo] = None) -> "CanFdBus":
+        if adapter is not None:
+            # Open the exact adapter from a previous scan_adapters() call:
+            # prefer the (stable) serial, fall back to the USB location.
+            self.selector.vid = adapter.vendor_id
+            self.selector.pid = adapter.product_id
+            self.selector.index = 0
+            self.selector.product = None
+            if adapter.serial:
+                self.selector.serial = adapter.serial
+                self.selector.bus = None
+                self.selector.address = None
+            else:
+                self.selector.serial = None
+                self.selector.bus = adapter.bus
+                self.selector.address = adapter.address
+
         device = self._match()
         self._device = device
         try:

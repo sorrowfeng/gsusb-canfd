@@ -1,4 +1,34 @@
-from gsusb_canfd import DEFAULT_PID, DEFAULT_VID, AdapterInfo, BusConfig, CanFdBus, DeviceSelector
+from gsusb_canfd import (
+    DEFAULT_PID,
+    DEFAULT_VID,
+    AdapterInfo,
+    BusConfig,
+    CanFdBus,
+    CanFdError,
+    DeviceSelector,
+)
+
+
+def test_open_from_adapter_maps_selector():
+    bus = CanFdBus()
+    with_serial = AdapterInfo(vendor_id=0x1234, product_id=0x5678, bus=3, address=9,
+                              manufacturer="X", product="Y", serial="SN1")
+    try:
+        bus.open(with_serial)  # no such device: selector mapping is what we check
+    except CanFdError:
+        pass
+    assert bus.selector.serial == "SN1"
+    assert bus.selector.bus is None and bus.selector.address is None
+
+    bus2 = CanFdBus()
+    no_serial = AdapterInfo(vendor_id=0x1111, product_id=0x2222, bus=4, address=7,
+                            manufacturer="X", product="Y")
+    try:
+        bus2.open(no_serial)
+    except CanFdError:
+        pass
+    assert bus2.selector.serial is None
+    assert bus2.selector.bus == 4 and bus2.selector.address == 7
 
 
 def test_adapter_names():

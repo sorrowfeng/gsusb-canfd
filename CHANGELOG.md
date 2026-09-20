@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AdapterInfo::displayName()` / `uniqueName()` (and the Python equivalents,
   plus `display_name`/`unique_name` in the C ABI) for a device label that
   includes the USB ids and, for `uniqueName()`, the serial number.
+- `CanFdBus::open(const AdapterInfo&)` / `CanFdBus.open(adapter)` to reopen the
+  exact adapter returned by a scan (serial first, USB bus/address otherwise);
+  `DeviceSelector` gained optional `bus`/`address` and its `index` semantics are
+  now documented.
 
 ### Changed
 
