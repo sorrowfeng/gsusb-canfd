@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-20
+
 ### Fixed
 
 - Python: a bulk read that simply ran out of time is no longer reported as a
@@ -45,7 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `canfd_term`'s `echo on` / `--echo`. Every send used to write `kEchoNone`, so no
   frame could ever carry the marker — which made those switches, the
   `if (frame.echo) continue;` guards and the `ec` output path all unreachable.
-  Echo frames are now labelled `ec` so they stay distinguishable from `RX`.
+  Echo frames are now labelled `ec`, so they stay distinguishable from the `RX`
+  lines of the C++ tools and from the unmarked ordinary lines of the Python CLI.
 
 ### Documentation
 

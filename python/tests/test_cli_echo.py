@@ -15,6 +15,9 @@ ECHO_FRAME = CanFrame(id=0x501, data=b"\xDE\xAD\xBE\xEF", fd=True, brs=True, ech
 # Printed exactly once per echo frame and nowhere else -- the "trigger: sent 501"
 # line would make a plain "501" check useless.
 ECHO_MARKER = "DE AD BE EF"
+# The prefix the C++ tools use for a loopback; the Python CLI prints it too, so
+# that --show-echo is visible in the output and not just on the wire.
+ECHO_PREFIX = "ec  "
 
 
 class _FakeBus:
@@ -72,7 +75,9 @@ def test_show_echo_tags_the_trigger_and_prints_the_loopback(monkeypatch, capsys)
     )
     assert len(bus.sent) == 1
     assert bus.sent[0][1] is True, "--show-echo must request the TX tag"
-    assert ECHO_MARKER in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert ECHO_MARKER in out
+    assert ECHO_PREFIX in out, "an opted-in loopback has to be visible as one"
 
 
 class _Clock:
@@ -100,4 +105,6 @@ def test_repeated_trigger_uses_the_same_echo_choice(monkeypatch, capsys, show_ec
 def test_peer_frames_still_print_without_show_echo(monkeypatch, capsys):
     peer = CanFrame(id=0x481, data=b"\x11", fd=True, brs=True)
     _run(monkeypatch, ["monitor", "--count", "1"], [None, peer])
-    assert "481" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "481" in out
+    assert ECHO_PREFIX not in out, "ordinary traffic must keep its old shape"

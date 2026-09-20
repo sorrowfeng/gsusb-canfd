@@ -152,7 +152,9 @@ def cmd_monitor(args) -> int:
                 continue
             if args.filter and frame.id not in args.filter:
                 continue
-            print(frame)
+            # A tagged loopback gets an "ec" marker, matching the C++ tools; an
+            # untagged frame is printed as before, so only opted-in echoes change.
+            print(f"ec  {frame}" if frame.echo else frame)
             printed += 1
             if args.count and printed >= args.count:
                 break
@@ -191,7 +193,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="only show these ids")
     p_mon.add_argument("--show-echo", action="store_true",
                        help="also show the loopbacks of the frames this tool sends "
-                            "(it tags them so the adapter returns them marked)")
+                            "(it tags them so the adapter returns them marked; they "
+                            "are printed with an ec marker)")
     p_mon.add_argument("--rate", type=float, default=200.0, help="receive rate in Hz")
     p_mon.add_argument("--count", type=int, default=0, help="stop after N frames")
     p_mon.set_defaults(func=cmd_monitor)
