@@ -51,65 +51,17 @@ endif()
 
 find_package(Threads REQUIRED)
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 # --- libusb-1.0 discovery ---------------------------------------------------
-# Search order:
-#   1. pkg-config (Homebrew, apt, MSYS2, vcpkg with PKG_CONFIG_PATH)
-#   2. an installed CMake package (vcpkg, Conan, distro)
-#   3. find_path/find_library, honouring LIBUSB_ROOT / CMAKE_PREFIX_PATH
-#
-# On Windows without a package manager: download the official prebuilt
-# libusb-1.0.xx.7z from https://github.com/libusb/libusb/releases, extract it
-# and pass -DLIBUSB_ROOT=<extracted-dir>.
-set(CANFD_LIBUSB_TARGET "")
+# The search logic is shared with the installed package config; see
+# cmake/CanFdFindLibusb.cmake for the order and the supported layouts (including
+# the official Windows release archive via -DLIBUSB_ROOT=<extracted-dir>).
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CanFdFindLibusb.cmake)
+canfd_find_libusb()
 
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-  pkg_check_modules(LIBUSB QUIET IMPORTED_TARGET libusb-1.0)
-  if(LIBUSB_FOUND)
-    set(CANFD_LIBUSB_TARGET PkgConfig::LIBUSB)
-  endif()
-endif()
-
-if(NOT CANFD_LIBUSB_TARGET)
-  find_package(libusb-1.0 CONFIG QUIET)
-  foreach(_libusb_target
-      libusb::libusb libusb-1.0::libusb-1.0 libusb::usb-1.0 usb-1.0)
-    if(TARGET "${_libusb_target}")
-      set(CANFD_LIBUSB_TARGET "${_libusb_target}")
-      break()
-    endif()
-  endforeach()
-endif()
-
-if(NOT CANFD_LIBUSB_TARGET)
-  set(LIBUSB_ROOT "" CACHE PATH
-      "Root of an extracted/installed libusb (contains include/ and lib/)")
-  # PATH_SUFFIXES covers both the usual install layout (include/, lib/) and the
-  # official Windows release-archive layout, which nests the header one level
-  # deeper (include/libusb/libusb.h) and ships per-architecture import
-  # libraries (MS64/static, MinGW64/static, ...). Without those two entries a
-  # plain -DLIBUSB_ROOT=<archive root> fails to configure, despite the error
-  # message below telling users to do exactly that.
-  find_path(CANFD_LIBUSB_INCLUDE_DIR NAMES libusb.h
-    HINTS ${LIBUSB_ROOT} ENV LIBUSB_ROOT
-    PATH_SUFFIXES include include/libusb include/libusb-1.0)
-  find_library(CANFD_LIBUSB_LIBRARY NAMES usb-1.0 libusb-1.0
-    HINTS ${LIBUSB_ROOT} ENV LIBUSB_ROOT
-    PATH_SUFFIXES lib lib64 lib/x64 x64/Release/dll
-                  MS64/static MS64 MinGW64/static MinGW64)
-  if(CANFD_LIBUSB_INCLUDE_DIR AND CANFD_LIBUSB_LIBRARY)
-    add_library(canfd_libusb INTERFACE)
-    target_include_directories(canfd_libusb INTERFACE "${CANFD_LIBUSB_INCLUDE_DIR}")
-    target_link_libraries(canfd_libusb INTERFACE "${CANFD_LIBUSB_LIBRARY}")
-    set(CANFD_LIBUSB_TARGET canfd_libusb)
-  else()
-    message(STATUS
-      "libusb not found; after last resort. include='${CANFD_LIBUSB_INCLUDE_DIR}' "
-      "library='${CANFD_LIBUSB_LIBRARY}'")
-  endif()
-endif()
-
-if(NOT CANFD_LIBUSB_TARGET)
+if(NOT CANFD_LIBUSB_FOUND)
   message(FATAL_ERROR
     "libusb-1.0 not found. Options:\n"
     "  macOS:   brew install libusb\n"
@@ -151,12 +103,13 @@ configure_file(cmake/version.hpp.in
 target_include_directories(canfd
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_compile_features(canfd PUBLIC cxx_std_17)
 set_target_properties(canfd PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(canfd PRIVATE ${CANFD_LIBUSB_TARGET})
+target_link_libraries(canfd PRIVATE canfd_libusb)
 target_link_libraries(canfd PRIVATE Threads::Threads)
 
 if(CANFD_BUILD_SHARED)
@@ -197,3 +150,38 @@ if(CANFD_BUILD_TESTS AND _canfd_top_level)
     add_test(NAME ${test_name} COMMAND ${test_name})
   endforeach()
 endif()
+
+# --- installation -----------------------------------------------------------
+# find_package(gsusb-canfd) then target_link_libraries(app PRIVATE canfd::canfd).
+install(TARGETS canfd
+  EXPORT gsusb_canfdTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PATTERN ".DS_Store" EXCLUDE)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/canfd/version.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/canfd)
+
+install(EXPORT gsusb_canfdTargets
+  FILE gsusb-canfd-targets.cmake
+  NAMESPACE canfd::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+
+configure_package_config_file(
+  cmake/gsusb-canfd-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
+  cmake/CanFdFindLibusb.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)

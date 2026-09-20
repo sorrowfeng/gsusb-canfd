@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CMake install/export support: `cmake --install` produces a relocatable
+  package and downstream projects can use `find_package(gsusb-canfd)` +
+  `canfd::canfd`. The generated `version.hpp` is installed alongside the public
+  headers, and the package config recreates the libusb dependency.
+
 ### Changed
 
 - `add_subdirectory(gsusb-canfd)` no longer pollutes the parent project: the

@@ -1,0 +1,21 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+
+# Recreate the interface target the exported `canfd` target refers to (it is
+# IMPORTED, so it lives on the consumer side). See CanFdFindLibusb.cmake.
+include("${CMAKE_CURRENT_LIST_DIR}/CanFdFindLibusb.cmake")
+canfd_find_libusb()
+if(NOT CANFD_LIBUSB_FOUND)
+  set("${CMAKE_FIND_PACKAGE_NAME}_FOUND" FALSE)
+  set("${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE"
+      "gsusb-canfd needs libusb-1.0. Install it (brew/apt/vcpkg) or set "
+      "LIBUSB_ROOT, or point at it with CANFD_LIBUSB_INCLUDE_DIR and "
+      "CANFD_LIBUSB_LIBRARY.")
+  return()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/gsusb-canfd-targets.cmake")
+
+check_required_components("${CMAKE_FIND_PACKAGE_NAME}")
