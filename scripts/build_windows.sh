@@ -136,7 +136,10 @@ fi
 
 # --------------------------------------------------------------- 2. configure
 echo "==> configuring"
-"$CMAKE_BIN" -S "$ROOT" -B "$BUILD_DIR" "${GENERATOR[@]}" \
+# CMake is a native Windows binary: it cannot resolve Git Bash's /c/... paths,
+# so every path handed to it (or to ctest) must be converted first. ROOT comes
+# from `pwd` and is therefore POSIX; BUILD_DIR may be given either way.
+"$CMAKE_BIN" -S "$(to_windows "$ROOT")" -B "$(to_windows "$BUILD_DIR")" "${GENERATOR[@]}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_COMPILER="$(to_windows "$CXX_BIN")" \
   -DCANFD_LIBUSB_INCLUDE_DIR="$(to_windows "$TP/include/libusb-1.0")" \
@@ -145,7 +148,7 @@ echo "==> configuring"
 
 # ------------------------------------------------------------------- 3. build
 echo "==> building"
-"$CMAKE_BIN" --build "$BUILD_DIR" -j
+"$CMAKE_BIN" --build "$(to_windows "$BUILD_DIR")" -j
 
 # ------------------------------------------------------------- 4. deploy dll
 cp "$TP/bin/libusb-1.0.dll" "$BUILD_DIR/"
@@ -153,10 +156,10 @@ echo "==> copied libusb-1.0.dll into $BUILD_DIR"
 
 # --------------------------------------------------------------- 5. self-test
 echo "==> unit tests"
-ctest --test-dir "$BUILD_DIR" --output-on-failure
+ctest --test-dir "$(to_windows "$BUILD_DIR")" --output-on-failure
 
 echo "==> attached adapters"
-"$BUILD_DIR/canfd.exe" list || true
+"$(to_windows "$BUILD_DIR")\\canfd.exe" list || true
 
 cat <<EOF
 
