@@ -29,6 +29,7 @@ int main() {
   check(config.data_bitrate == 5'000'000, "default data bitrate");
   check(config.fd == 1, "default fd");
   check(config.hw_timestamp == 1, "default hw_timestamp");
+  check(config.drop_echo == 0, "default drop_echo is off");
 
   CanFdAdapterInfo adapters[1];
   check(canfd_scan(nullptr, 1) == CANFD_ERROR, "null scan is rejected");

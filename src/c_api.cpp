@@ -80,6 +80,7 @@ void canfd_bus_config_default(CanFdBusConfig* config) {
   config->loopback = defaults.loopback ? 1 : 0;
   config->one_shot = defaults.one_shot ? 1 : 0;
   config->hw_timestamp = defaults.hw_timestamp ? 1 : 0;
+  config->drop_echo = defaults.drop_echo ? 1 : 0;
 }
 
 int canfd_scan(CanFdAdapterInfo* out, int max) {
@@ -149,6 +150,7 @@ int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config) {
     bus_config.loopback = config->loopback != 0;
     bus_config.one_shot = config->one_shot != 0;
     bus_config.hw_timestamp = config->hw_timestamp != 0;
+    bus_config.drop_echo = config->drop_echo != 0;
     handle->bus.configure(bus_config);
     return CANFD_OK;
   } catch (const std::exception& exc) {

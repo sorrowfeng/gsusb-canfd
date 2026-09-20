@@ -70,6 +70,7 @@ struct CanFdBus::Impl {
   bool is_fd = false;
   bool listen_only = false;
   bool hw_timestamp = true;
+  bool drop_echo = false;
   bool started = false;
 
   std::thread worker;
@@ -196,6 +197,7 @@ void CanFdBus::configure(const BusConfig& config) {
   impl_->listen_only = config.listen_only;
   impl_->hw_timestamp =
       config.hw_timestamp && ((impl_->feature & gs_usb::kFeatureHwTimestamp) != 0);
+  impl_->drop_echo = config.drop_echo;
 
   uint32_t flags = 0;
   if (config.listen_only) {
@@ -258,14 +260,33 @@ bool CanFdBus::receive(CanFrame& out, std::chrono::milliseconds timeout) {
     throw CanFdError("device is not started");
   }
 
-  std::vector<uint8_t> buffer(impl_->rxSize(), 0);
-  const int received = impl_->transport->bulkRead(
-      buffer.data(), static_cast<int>(buffer.size()), static_cast<unsigned>(timeout.count()));
-  if (received < 0) {
-    return false;
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  for (;;) {
+    long long remaining_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(deadline -
+                                                              std::chrono::steady_clock::now())
+            .count();
+    if (timeout.count() > 0) {
+      if (remaining_ms <= 0) {
+        return false;
+      }
+    } else {
+      // A zero timeout means "block until a frame arrives"; keep it that way.
+      remaining_ms = 0;
+    }
+
+    std::vector<uint8_t> buffer(impl_->rxSize(), 0);
+    const int received = impl_->transport->bulkRead(
+        buffer.data(), static_cast<int>(buffer.size()), static_cast<unsigned>(remaining_ms));
+    if (received < 0) {
+      return false;
+    }
+    out = decodeFrame(buffer.data(), static_cast<std::size_t>(received), impl_->hw_timestamp);
+    if (impl_->drop_echo && out.echo) {
+      continue;  // loopback of our own TX: skip it
+    }
+    return true;
   }
-  out = decodeFrame(buffer.data(), static_cast<std::size_t>(received), impl_->hw_timestamp);
-  return true;
 }
 
 void CanFdBus::start(ReceiveCallback callback) {

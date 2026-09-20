@@ -68,6 +68,11 @@ struct BusConfig {
   bool loopback = false;
   bool one_shot = false;
   bool hw_timestamp = true;
+  /* Drop frames this adapter transmitted back to us (CanFrame::echo == true)
+     from the receive path. Only echo-tagged sends -- send(frame, true) -- can be
+     recognised, so pair this with those. Defaults to false (no behaviour
+     change); set it to true to keep loopbacks out of the normal RX stream. */
+  bool drop_echo = false;
 };
 
 std::vector<AdapterInfo> scanAdapters(uint16_t vid = 0, uint16_t pid = 0);

@@ -67,6 +67,7 @@ typedef struct CanFdBusConfig {
   int loopback;
   int one_shot;
   int hw_timestamp;
+  int drop_echo;      /* drop echo-tagged loopbacks from the receive path */
 } CanFdBusConfig;
 
 typedef struct CanFdFrame {

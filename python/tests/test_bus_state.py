@@ -1,4 +1,14 @@
-from gsusb_canfd import DEFAULT_PID, DEFAULT_VID, CanFdBus, DeviceSelector
+from gsusb_canfd import DEFAULT_PID, DEFAULT_VID, BusConfig, CanFdBus, DeviceSelector
+
+
+def test_bus_config_defaults():
+    config = BusConfig()
+    assert config.fd is True
+    assert config.hw_timestamp is True
+    assert config.drop_echo is False
+
+    bus = CanFdBus()
+    assert bus.drop_echo is False
 
 
 def test_fresh_bus_is_not_open_or_started():

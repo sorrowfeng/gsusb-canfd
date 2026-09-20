@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   package and downstream projects can use `find_package(gsusb-canfd)` +
   `canfd::canfd`. The generated `version.hpp` is installed alongside the public
   headers, and the package config recreates the libusb dependency.
+- `BusConfig::drop_echo` (C++/Python) and `CanFdBusConfig::drop_echo` (C ABI):
+  drop echo-tagged loopbacks from the receive path. Defaults to `false`; pair it
+  with `send(frame, echo=true)` to keep your own TX out of the RX stream.
 
 ### Changed
 

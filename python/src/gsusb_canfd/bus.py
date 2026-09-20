@@ -109,6 +109,11 @@ class BusConfig:
     loopback: bool = False
     one_shot: bool = False
     hw_timestamp: bool = True
+    # Drop frames this adapter transmitted back to us (CanFrame.echo) from the
+    # receive path. Only echo-tagged sends -- send(frame, echo=True) -- can be
+    # recognised, so pair this with those. Defaults to False (no behaviour
+    # change); set it True to keep loopbacks out of the normal RX stream.
+    drop_echo: bool = False
 
 
 _TIMEOUT_EXC = tuple(
@@ -272,6 +277,7 @@ class CanFdBus:
         self.is_fd = False
         self.listen_only = False
         self.hw_timestamp = True
+        self.drop_echo = False
         self._started = False
 
         self._worker: Optional[threading.Thread] = None
@@ -388,6 +394,7 @@ class CanFdBus:
         self.is_fd = fd
         self.listen_only = config.listen_only
         self.hw_timestamp = bool(config.hw_timestamp and (self.feature & FEATURE_HW_TIMESTAMP))
+        self.drop_echo = bool(config.drop_echo)
 
         flags = 0
         if config.listen_only:
@@ -446,13 +453,28 @@ class CanFdBus:
     def receive(self, timeout: float = 1.0) -> Optional[CanFrame]:
         if self._device is None or not self._started:
             raise CanFdError("device is not started")
-        try:
-            buffer = self._device.read(self.ep_in, self._rx_size, timeout=int(timeout * 1000))
-        except usb.core.USBError as exc:
-            if _is_timeout(exc):
-                return None
-            raise CanFdError(f"bulk read failed: {exc}") from exc
-        return decode_frame(bytes(buffer), self.hw_timestamp)
+
+        deadline = time.monotonic() + timeout if timeout > 0 else None
+        while True:
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                timeout_ms = max(1, int(remaining * 1000))
+            else:
+                timeout_ms = 0  # block until a frame arrives
+
+            try:
+                buffer = self._device.read(self.ep_in, self._rx_size, timeout=timeout_ms)
+            except usb.core.USBError as exc:
+                if _is_timeout(exc):
+                    return None
+                raise CanFdError(f"bulk read failed: {exc}") from exc
+
+            frame = decode_frame(bytes(buffer), self.hw_timestamp)
+            if self.drop_echo and frame.echo:
+                continue  # loopback of our own TX: skip it
+            return frame
 
     # ------------------------------------------------------- async receive
 
