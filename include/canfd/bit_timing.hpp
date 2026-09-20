@@ -3,15 +3,10 @@
 
 #include <array>
 #include <cstdint>
-#include <stdexcept>
-#include <string>
+
+#include "canfd/error.hpp"
 
 namespace canfd {
-
-class CanFdError : public std::runtime_error {
- public:
-  explicit CanFdError(const std::string& what) : std::runtime_error(what) {}
-};
 
 struct BitTimingConst {
   uint32_t tseg1_min = 0;

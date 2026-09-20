@@ -6,7 +6,18 @@ from gsusb_canfd import (
     CanFdBus,
     CanFdError,
     DeviceSelector,
+    NotFoundError,
 )
+
+
+def test_not_found_error_type():
+    bus = CanFdBus(DeviceSelector(vid=0xBEEF, pid=0xBEEF))
+    try:
+        bus.open()
+        assert False, "opening a non-existent device should raise"
+    except NotFoundError as exc:
+        assert isinstance(exc, CanFdError)
+        assert exc.code == "not_found"
 
 
 def test_open_from_adapter_maps_selector():

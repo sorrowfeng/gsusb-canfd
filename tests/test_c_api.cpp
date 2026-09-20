@@ -21,6 +21,7 @@ int main() {
   check(canfd_version() != nullptr && canfd_version()[0] != '\0', "version is set");
   check(std::strcmp(canfd_version(), CANFD_VERSION) == 0, "C ABI version matches header");
   check(canfd_last_error() != nullptr, "last error is never null");
+  check(canfd_last_error_code() == CANFD_ERRC_NONE, "no error code before any failure");
 
   CanFdBusConfig config;
   std::memset(&config, 0, sizeof(config));
@@ -45,6 +46,8 @@ int main() {
   check(canfd_send_echo(reinterpret_cast<CanFdHandle*>(1), nullptr, 0) == CANFD_ERROR,
         "null send_echo frame is rejected");
   check(canfd_receive(nullptr, &frame, 10) == CANFD_ERROR, "null receive is rejected");
+  check(canfd_last_error_code() == CANFD_ERRC_ARGUMENT,
+        "null argument is reported as CANFD_ERRC_ARGUMENT");
   check(canfd_start(nullptr, nullptr, nullptr) == CANFD_ERROR, "null start is rejected");
 
   check(canfd_is_open(nullptr) == 0, "is_open(null)");

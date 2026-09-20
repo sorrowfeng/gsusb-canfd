@@ -38,6 +38,14 @@ extern "C" {
 #define CANFD_RECEIVE_FRAME 1
 #define CANFD_RECEIVE_TIMEOUT 0
 
+/* canfd_last_error_code(): class of the last failure, mirroring the C++
+ * canfd::ErrorCode enum. */
+#define CANFD_ERRC_NONE 0
+#define CANFD_ERRC_NOT_FOUND 1
+#define CANFD_ERRC_TIMEOUT 2
+#define CANFD_ERRC_BUS 3
+#define CANFD_ERRC_ARGUMENT 4
+
 /* Feature bits returned by canfd_feature(). */
 #define CANFD_FEATURE_LISTEN_ONLY (1u << 0)
 #define CANFD_FEATURE_LOOPBACK (1u << 1)
@@ -94,6 +102,7 @@ typedef void (*CanFdReceiveCallback)(const CanFdFrame* frame, void* user);
 
 CANFD_API const char* canfd_version(void);
 CANFD_API const char* canfd_last_error(void);
+CANFD_API int canfd_last_error_code(void);
 
 CANFD_API void canfd_bus_config_default(CanFdBusConfig* config);
 

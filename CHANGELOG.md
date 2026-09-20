@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact adapter returned by a scan (serial first, USB bus/address otherwise);
   `DeviceSelector` gained optional `bus`/`address` and its `index` semantics are
   now documented.
+- Typed errors: `canfd::NotFoundError`, `TimeoutError`, `BusError`,
+  `ArgumentError` (all deriving from `CanFdError`) with `CanFdError::code()`
+  returning `canfd::ErrorCode`. Python mirrors them, and the C ABI gained
+  `canfd_last_error_code()` with `CANFD_ERRC_*` constants.
 
 ### Changed
 

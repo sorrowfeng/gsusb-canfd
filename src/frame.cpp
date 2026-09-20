@@ -37,12 +37,12 @@ uint32_t getU32Le(const uint8_t* in) {
 uint8_t lengthToDlc(std::size_t length, bool fd) {
   if (!fd) {
     if (length > 8) {
-      throw CanFdError("classic CAN payload cannot exceed 8 bytes");
+      throw ArgumentError("classic CAN payload cannot exceed 8 bytes");
     }
     return static_cast<uint8_t>(length);
   }
   if (length > kMaxPayload) {
-    throw CanFdError("CAN FD payload cannot exceed 64 bytes");
+    throw ArgumentError("CAN FD payload cannot exceed 64 bytes");
   }
   for (uint8_t dlc = 0; dlc < 16; ++dlc) {
     if (kDlcToLen[dlc] >= length) {
@@ -62,7 +62,7 @@ std::size_t dlcToLength(uint8_t dlc, bool fd) {
 std::vector<uint8_t> encodeFrame(const CanFrame& frame, uint32_t echo_id) {
   const bool fd = frame.fd;
   if (frame.size > (fd ? 64u : 8u)) {
-    throw CanFdError("payload too large for frame type");
+    throw ArgumentError("payload too large for frame type");
   }
 
   uint32_t can_id = frame.id & (frame.extended ? kCanEffMask : 0x7FFu);
@@ -100,7 +100,7 @@ std::vector<uint8_t> encodeFrame(const CanFrame& frame, uint32_t echo_id) {
 
 CanFrame decodeFrame(const uint8_t* buffer, std::size_t length, bool hw_timestamp) {
   if (length < kHeaderSize) {
-    throw CanFdError("short gs_usb frame");
+    throw BusError("short gs_usb frame");
   }
 
   CanFrame frame;

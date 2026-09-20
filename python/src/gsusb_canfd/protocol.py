@@ -67,7 +67,33 @@ LEN_TO_DLC = {length: dlc for dlc, length in DLC_TO_LEN.items()}
 
 
 class CanFdError(RuntimeError):
-    """Raised for gs_usb transport, configuration and protocol errors."""
+    """Base error; ``code`` classifies it for callers mapping onto their own codes."""
+
+    code = "bus"
+
+
+class NotFoundError(CanFdError):
+    """No matching adapter/interface, or a selector that matches nothing."""
+
+    code = "not_found"
+
+
+class TimeoutError(CanFdError):  # noqa: A001 - deliberate, mirrors the C++ type
+    """An operation exceeded its timeout."""
+
+    code = "timeout"
+
+
+class BusError(CanFdError):
+    """USB/transport failure or an unsupported configuration."""
+
+    code = "bus"
+
+
+class ArgumentError(CanFdError):
+    """Invalid argument, or an operation called in the wrong state."""
+
+    code = "argument"
 
 
 @dataclass

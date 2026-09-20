@@ -56,12 +56,19 @@ int main() {
   try {
     canfd::calculateBitTiming(0, 0.8, 48'000'000, defaultConst());
     check(false, "zero bitrate should throw");
-  } catch (const canfd::CanFdError&) {
+  } catch (const canfd::ArgumentError& exc) {
+    check(exc.code() == canfd::ErrorCode::kArgument, "invalid input is an ArgumentError");
   }
 
   try {
     canfd::calculateBitTiming(1'000'000, 1.5, 48'000'000, defaultConst());
     check(false, "invalid sample point should throw");
+  } catch (const canfd::ArgumentError&) {
+  }
+
+  // The typed errors are also CanFdError, so existing catch clauses keep working.
+  try {
+    canfd::calculateBitTiming(0, 0.8, 48'000'000, defaultConst());
   } catch (const canfd::CanFdError&) {
   }
 

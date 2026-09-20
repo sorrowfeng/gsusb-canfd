@@ -42,8 +42,11 @@ from .protocol import (
     MODE_START,
     BitTiming,
     BitTimingConst,
+    ArgumentError,
+    BusError,
     CanFdError,
     CanFrame,
+    NotFoundError,
     calculate_bit_timing,
     decode_frame,
     encode_frame,
@@ -274,7 +277,7 @@ def _find_interface(device):
         ep_in, ep_out = _bulk_endpoints(interface)
         if ep_in is not None and ep_out is not None:
             return config, interface, ep_in, ep_out
-    raise CanFdError("no bulk endpoints found on device")
+    raise NotFoundError("no bulk endpoints found on device")
 
 
 class CanFdBus:
@@ -319,12 +322,12 @@ class CanFdBus:
             self.selector.address,
         )
         if not devices:
-            raise CanFdError(
+            raise NotFoundError(
                 f"no gs_usb device found (vid=0x{self.selector.vid:04X} "
                 f"pid=0x{self.selector.pid:04X})"
             )
         if not 0 <= self.selector.index < len(devices):
-            raise CanFdError(
+            raise NotFoundError(
                 f"device index {self.selector.index} out of range ({len(devices)} found)"
             )
         return devices[self.selector.index]
@@ -411,13 +414,13 @@ class CanFdBus:
     def configure(self, config: Optional[BusConfig] = None) -> "CanFdBus":
         config = config or BusConfig()
         if self._device is None:
-            raise CanFdError("call open() before configure()")
+            raise ArgumentError("call open() before configure()")
         if self.nominal_const is None:
-            raise CanFdError("device capabilities not available")
+            raise BusError("device capabilities not available")
 
         fd = config.fd and bool(self.feature & FEATURE_FD)
         if config.fd and not (self.feature & FEATURE_FD):
-            raise CanFdError("device does not support CAN FD")
+            raise BusError("device does not support CAN FD")
 
         self.nominal_timing = calculate_bit_timing(
             config.bitrate, config.sample_point, self.fclk_can, self.nominal_const
@@ -426,7 +429,7 @@ class CanFdBus:
 
         if fd:
             if self.data_const is None:
-                raise CanFdError("device does not report CAN FD timing constants")
+                raise BusError("device does not report CAN FD timing constants")
             self.data_timing = calculate_bit_timing(
                 config.data_bitrate, config.data_sample_point, self.fclk_can, self.data_const
             )
@@ -440,15 +443,15 @@ class CanFdBus:
         flags = 0
         if config.listen_only:
             if not (self.feature & FEATURE_LISTEN_ONLY):
-                raise CanFdError("device does not support listen-only mode")
+                raise BusError("device does not support listen-only mode")
             flags |= MODE_LISTEN_ONLY
         if config.loopback:
             if not (self.feature & FEATURE_LOOPBACK):
-                raise CanFdError("device does not support loopback mode")
+                raise BusError("device does not support loopback mode")
             flags |= MODE_LOOPBACK
         if config.one_shot:
             if not (self.feature & FEATURE_ONE_SHOT):
-                raise CanFdError("device does not support one-shot mode")
+                raise BusError("device does not support one-shot mode")
             flags |= MODE_ONE_SHOT
         if fd:
             flags |= MODE_FD
@@ -463,7 +466,7 @@ class CanFdBus:
         try:
             return self._device.ctrl_transfer(0x41, request, self.channel, 0, data)
         except usb.core.USBError as exc:
-            raise CanFdError(f"control request {request} failed: {exc}") from exc
+            raise BusError(f"control request {request} failed: {exc}") from exc
 
     # ------------------------------------------------------------------- I/O
 
@@ -474,9 +477,9 @@ class CanFdBus:
 
     def send(self, frame: CanFrame, echo: bool = False) -> None:
         if self._device is None or not self._started:
-            raise CanFdError("device is not started")
+            raise ArgumentError("device is not started")
         if frame.fd and not self.is_fd:
-            raise CanFdError("cannot send a CAN FD frame on a classic CAN bus")
+            raise BusError("cannot send a CAN FD frame on a classic CAN bus")
 
         out = CanFrame(
             id=frame.id,
@@ -493,7 +496,7 @@ class CanFdBus:
 
     def receive(self, timeout: float = 1.0) -> Optional[CanFrame]:
         if self._device is None or not self._started:
-            raise CanFdError("device is not started")
+            raise ArgumentError("device is not started")
 
         deadline = time.monotonic() + timeout if timeout > 0 else None
         while True:
@@ -510,7 +513,7 @@ class CanFdBus:
             except usb.core.USBError as exc:
                 if _is_timeout(exc):
                     return None
-                raise CanFdError(f"bulk read failed: {exc}") from exc
+                raise BusError(f"bulk read failed: {exc}") from exc
 
             frame = decode_frame(bytes(buffer), self.hw_timestamp)
             if self.drop_echo and frame.echo:
@@ -521,9 +524,9 @@ class CanFdBus:
 
     def start(self, callback: Callable[[CanFrame], None]) -> None:
         if self._device is None or not self._started:
-            raise CanFdError("device is not started")
+            raise ArgumentError("device is not started")
         if self._running:
-            raise CanFdError("receive loop is already running")
+            raise ArgumentError("receive loop is already running")
         self._callback = callback
         self._running = True
 

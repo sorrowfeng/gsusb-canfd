@@ -137,7 +137,7 @@ std::vector<FoundDevice> findDevices(libusb_context* context, const DeviceSelect
   libusb_device** list = nullptr;
   const ssize_t count = libusb_get_device_list(context, &list);
   if (count < 0) {
-    throw CanFdError("libusb_get_device_list failed");
+    throw BusError("libusb_get_device_list failed");
   }
 
   for (ssize_t i = 0; i < count; ++i) {
@@ -263,7 +263,7 @@ bool findBulkInterface(libusb_device* device, libusb_device_handle* handle, uint
 std::vector<AdapterInfo> scanAdapters(uint16_t vid, uint16_t pid) {
   libusb_context* context = globalContext();
   if (context == nullptr) {
-    throw CanFdError("libusb_init failed");
+    throw BusError("libusb_init failed");
   }
 
   DeviceSelector selector;
@@ -290,17 +290,17 @@ void UsbTransport::open() {
   }
   libusb_context* context = globalContext();
   if (context == nullptr) {
-    throw CanFdError("libusb_init failed");
+    throw BusError("libusb_init failed");
   }
 
   auto found = findDevices(context, selector_, selector_.vid == 0 && selector_.pid == 0);
   if (found.empty()) {
-    throw CanFdError("no gs_usb device found");
+    throw NotFoundError("no gs_usb device found");
   }
   if (selector_.index < 0 || static_cast<std::size_t>(selector_.index) >= found.size()) {
     const std::size_t available = found.size();
     freeFound(found);
-    throw CanFdError("device index out of range (" + std::to_string(available) + " found)");
+    throw NotFoundError("device index out of range (" + std::to_string(available) + " found)");
   }
 
   libusb_device* device = found[static_cast<std::size_t>(selector_.index)].device;
@@ -308,7 +308,7 @@ void UsbTransport::open() {
   freeFound(found);
   if (rc != 0) {
     handle_ = nullptr;
-    throw CanFdError("libusb_open failed: " + std::string(libusb_error_name(rc)));
+    throw BusError("libusb_open failed: " + std::string(libusb_error_name(rc)));
   }
 
 #if defined(LIBUSB_API_VERSION) && LIBUSB_API_VERSION >= 0x01000102
@@ -318,13 +318,13 @@ void UsbTransport::open() {
   int interface_number = -1;
   if (!findBulkInterface(device, handle_, &ep_in_, &ep_out_, &interface_number)) {
     close();
-    throw CanFdError("no bulk endpoints found on device");
+    throw NotFoundError("no bulk endpoints found on device");
   }
   interface_number_ = interface_number;
 
   if (libusb_claim_interface(handle_, interface_number_) != 0) {
     close();
-    throw CanFdError("failed to claim USB interface");
+    throw BusError("failed to claim USB interface");
   }
   interface_claimed_ = true;
 }
@@ -345,8 +345,8 @@ int UsbTransport::controlIn(uint8_t request, uint16_t value, uint16_t index, uin
   const int rc = libusb_control_transfer(handle_, gs_usb::kCtrlIn, request, value, index, data,
                                          size, 1000);
   if (rc < 0) {
-    throw CanFdError("control request " + std::to_string(request) +
-                     " failed: " + std::string(libusb_error_name(rc)));
+    throw BusError("control request " + std::to_string(request) +
+                   " failed: " + std::string(libusb_error_name(rc)));
   }
   return rc;
 }
@@ -356,8 +356,8 @@ int UsbTransport::controlOut(uint8_t request, uint16_t value, uint16_t index,
   const int rc = libusb_control_transfer(handle_, gs_usb::kCtrlOut, request, value, index,
                                          const_cast<uint8_t*>(data), size, 1000);
   if (rc < 0) {
-    throw CanFdError("control request " + std::to_string(request) +
-                     " failed: " + std::string(libusb_error_name(rc)));
+    throw BusError("control request " + std::to_string(request) +
+                   " failed: " + std::string(libusb_error_name(rc)));
   }
   return rc;
 }
@@ -366,8 +366,11 @@ int UsbTransport::bulkWrite(const uint8_t* data, int size, unsigned timeout_ms) 
   int transferred = 0;
   const int rc = libusb_bulk_transfer(handle_, ep_out_, const_cast<uint8_t*>(data), size,
                                       &transferred, timeout_ms);
+  if (rc == LIBUSB_ERROR_TIMEOUT) {
+    throw TimeoutError("bulk write timed out");
+  }
   if (rc != 0) {
-    throw CanFdError("bulk write failed: " + std::string(libusb_error_name(rc)));
+    throw BusError("bulk write failed: " + std::string(libusb_error_name(rc)));
   }
   return transferred;
 }
@@ -379,7 +382,7 @@ int UsbTransport::bulkRead(uint8_t* data, int size, unsigned timeout_ms) {
     return -1;
   }
   if (rc != 0) {
-    throw CanFdError("bulk read failed: " + std::string(libusb_error_name(rc)));
+    throw BusError("bulk read failed: " + std::string(libusb_error_name(rc)));
   }
   return transferred;
 }

@@ -19,8 +19,37 @@ struct CanFdHandle {
 namespace {
 
 thread_local std::string g_last_error;
+thread_local int g_last_error_code = CANFD_ERRC_NONE;
 
-void setError(const std::string& message) { g_last_error = message; }
+void setError(const std::string& message, int code = CANFD_ERRC_BUS) {
+  g_last_error = message;
+  g_last_error_code = code;
+}
+
+/* Map a thrown exception onto a CANFD_ERRC_* code, so a C caller keeps the
+   error class instead of only a message. */
+void setException(const std::exception& exc) {
+  int code = CANFD_ERRC_BUS;
+  if (const auto* canfd_error = dynamic_cast<const canfd::CanFdError*>(&exc)) {
+    switch (canfd_error->code()) {
+      case canfd::ErrorCode::kNotFound:
+        code = CANFD_ERRC_NOT_FOUND;
+        break;
+      case canfd::ErrorCode::kTimeout:
+        code = CANFD_ERRC_TIMEOUT;
+        break;
+      case canfd::ErrorCode::kArgument:
+        code = CANFD_ERRC_ARGUMENT;
+        break;
+      case canfd::ErrorCode::kBus:
+      case canfd::ErrorCode::kNone:
+      default:
+        code = CANFD_ERRC_BUS;
+        break;
+    }
+  }
+  setError(exc.what(), code);
+}
 
 void copyString(char* dest, std::size_t size, const std::string& value) {
   std::snprintf(dest, size, "%s", value.c_str());
@@ -66,6 +95,8 @@ const char* canfd_version(void) { return CANFD_VERSION; }
 
 const char* canfd_last_error(void) { return g_last_error.c_str(); }
 
+int canfd_last_error_code(void) { return g_last_error_code; }
+
 void canfd_bus_config_default(CanFdBusConfig* config) {
   if (config == nullptr) {
     return;
@@ -85,7 +116,7 @@ void canfd_bus_config_default(CanFdBusConfig* config) {
 
 int canfd_scan(CanFdAdapterInfo* out, int max) {
   if (out == nullptr || max < 0) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   try {
@@ -107,7 +138,7 @@ int canfd_scan(CanFdAdapterInfo* out, int max) {
     }
     return count;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return CANFD_ERROR;
   }
 }
@@ -127,7 +158,7 @@ CanFdHandle* canfd_open_channel(uint16_t vid, uint16_t pid, int index, int chann
     handle->bus.open();
     return handle;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return nullptr;
   }
 }
@@ -138,7 +169,7 @@ CanFdHandle* canfd_open(int index) {
 
 int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config) {
   if (handle == nullptr || config == nullptr) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   try {
@@ -156,7 +187,7 @@ int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config) {
     handle->bus.configure(bus_config);
     return CANFD_OK;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return CANFD_ERROR;
   }
 }
@@ -167,21 +198,21 @@ int canfd_send(CanFdHandle* handle, const CanFdFrame* frame) {
 
 int canfd_send_echo(CanFdHandle* handle, const CanFdFrame* frame, int echo) {
   if (handle == nullptr || frame == nullptr) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   try {
     handle->bus.send(toBusFrame(*frame), echo != 0);
     return CANFD_OK;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return CANFD_ERROR;
   }
 }
 
 int canfd_receive(CanFdHandle* handle, CanFdFrame* frame, int timeout_ms) {
   if (handle == nullptr || frame == nullptr) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   try {
@@ -192,14 +223,14 @@ int canfd_receive(CanFdHandle* handle, CanFdFrame* frame, int timeout_ms) {
     toCFrame(bus_frame, *frame);
     return CANFD_RECEIVE_FRAME;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return CANFD_ERROR;
   }
 }
 
 int canfd_start(CanFdHandle* handle, CanFdReceiveCallback callback, void* user) {
   if (handle == nullptr || callback == nullptr) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   try {
@@ -214,7 +245,7 @@ int canfd_start(CanFdHandle* handle, CanFdReceiveCallback callback, void* user) 
     });
     return CANFD_OK;
   } catch (const std::exception& exc) {
-    setError(exc.what());
+    setException(exc);
     return CANFD_ERROR;
   }
 }
@@ -271,7 +302,7 @@ int canfd_channel(CanFdHandle* handle) {
 
 int canfd_endpoints(CanFdHandle* handle, int* ep_in, int* ep_out) {
   if (handle == nullptr) {
-    setError("invalid argument");
+    setError("invalid argument", CANFD_ERRC_ARGUMENT);
     return CANFD_ERROR;
   }
   if (ep_in != nullptr) {

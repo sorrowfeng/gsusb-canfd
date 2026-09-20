@@ -117,7 +117,7 @@ struct CanFdBus::Impl {
     const int legacy_received =
         transport->controlIn(gs_usb::kBreqBtConst, channel, 0, legacy.data(), 40);
     if (legacy_received < 40) {
-      throw CanFdError("device did not report bit timing constants");
+      throw BusError("device did not report bit timing constants");
     }
     feature = readU32Le(legacy.data() + 0);
     fclk_can = readU32Le(legacy.data() + 4);
@@ -197,12 +197,12 @@ void CanFdBus::open(const AdapterInfo& info) {
 
 void CanFdBus::configure(const BusConfig& config) {
   if (!impl_->transport || !impl_->transport->isOpen()) {
-    throw CanFdError("call open() before configure()");
+    throw ArgumentError("call open() before configure()");
   }
 
   const bool fd = config.fd && (impl_->feature & gs_usb::kFeatureFd);
   if (config.fd && !(impl_->feature & gs_usb::kFeatureFd)) {
-    throw CanFdError("device does not support CAN FD");
+    throw BusError("device does not support CAN FD");
   }
 
   impl_->nominal_timing = calculateBitTiming(config.bitrate, config.sample_point,
@@ -213,7 +213,7 @@ void CanFdBus::configure(const BusConfig& config) {
 
   if (fd) {
     if (!impl_->has_data_const) {
-      throw CanFdError("device does not report CAN FD timing constants");
+      throw BusError("device does not report CAN FD timing constants");
     }
     impl_->data_timing = calculateBitTiming(config.data_bitrate, config.data_sample_point,
                                             impl_->fclk_can, impl_->data_const);
@@ -231,19 +231,19 @@ void CanFdBus::configure(const BusConfig& config) {
   uint32_t flags = 0;
   if (config.listen_only) {
     if (!(impl_->feature & gs_usb::kFeatureListenOnly)) {
-      throw CanFdError("device does not support listen-only mode");
+      throw BusError("device does not support listen-only mode");
     }
     flags |= gs_usb::kModeListenOnly;
   }
   if (config.loopback) {
     if (!(impl_->feature & gs_usb::kFeatureLoopback)) {
-      throw CanFdError("device does not support loopback mode");
+      throw BusError("device does not support loopback mode");
     }
     flags |= gs_usb::kModeLoopback;
   }
   if (config.one_shot) {
     if (!(impl_->feature & gs_usb::kFeatureOneShot)) {
-      throw CanFdError("device does not support one-shot mode");
+      throw BusError("device does not support one-shot mode");
     }
     flags |= gs_usb::kModeOneShot;
   }
@@ -271,12 +271,12 @@ void CanFdBus::send(const CanFrame& frame) { send(frame, false); }
 
 void CanFdBus::send(const CanFrame& frame, bool echo) {
   if (!impl_->transport || !impl_->started) {
-    throw CanFdError("device is not started");
+    throw ArgumentError("device is not started");
   }
 
   CanFrame out = frame;
   if (frame.fd && !impl_->is_fd) {
-    throw CanFdError("cannot send CAN FD frame on a classic CAN bus");
+    throw BusError("cannot send CAN FD frame on a classic CAN bus");
   }
   out.channel = impl_->channel;
 
@@ -286,7 +286,7 @@ void CanFdBus::send(const CanFrame& frame, bool echo) {
 
 bool CanFdBus::receive(CanFrame& out, std::chrono::milliseconds timeout) {
   if (!impl_->transport || !impl_->started) {
-    throw CanFdError("device is not started");
+    throw ArgumentError("device is not started");
   }
 
   const auto deadline = std::chrono::steady_clock::now() + timeout;
@@ -320,10 +320,10 @@ bool CanFdBus::receive(CanFrame& out, std::chrono::milliseconds timeout) {
 
 void CanFdBus::start(ReceiveCallback callback) {
   if (!impl_->transport || !impl_->started) {
-    throw CanFdError("device is not started");
+    throw ArgumentError("device is not started");
   }
   if (impl_->running.exchange(true)) {
-    throw CanFdError("receive loop is already running");
+    throw ArgumentError("receive loop is already running");
   }
   {
     std::lock_guard<std::mutex> lock(impl_->callback_mutex);

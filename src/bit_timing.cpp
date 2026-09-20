@@ -31,13 +31,13 @@ std::array<uint8_t, 20> BitTiming::toBytes() const {
 BitTiming calculateBitTiming(uint32_t bitrate, double sample_point, uint32_t fclk,
                              const BitTimingConst& btc) {
   if (bitrate == 0) {
-    throw CanFdError("bitrate must be positive");
+    throw ArgumentError("bitrate must be positive");
   }
   if (!(sample_point > 0.0 && sample_point < 1.0)) {
-    throw CanFdError("sample point must be between 0 and 1");
+    throw ArgumentError("sample point must be between 0 and 1");
   }
   if (fclk == 0) {
-    throw CanFdError("device clock frequency is unknown");
+    throw BusError("device clock frequency is unknown");
   }
 
   const uint32_t brp_inc = btc.brp_inc == 0 ? 1 : btc.brp_inc;
@@ -78,7 +78,7 @@ BitTiming calculateBitTiming(uint32_t bitrate, double sample_point, uint32_t fcl
   }
 
   if (!found) {
-    throw CanFdError("cannot derive bit timing for " + std::to_string(bitrate) +
+    throw ArgumentError("cannot derive bit timing for " + std::to_string(bitrate) +
                      " bit/s at " + std::to_string(sample_point * 100.0) +
                      "% with fclk=" + std::to_string(fclk));
   }

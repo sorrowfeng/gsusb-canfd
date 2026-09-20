@@ -17,10 +17,14 @@ from .bus import (
     scan_adapters,
 )
 from .protocol import (
+    ArgumentError,
     BitTiming,
     BitTimingConst,
+    BusError,
     CanFdError,
     CanFrame,
+    NotFoundError,
+    TimeoutError,
     calculate_bit_timing,
     decode_frame,
     dlc_to_length,
@@ -30,9 +34,11 @@ from .protocol import (
 
 __all__ = [
     "AdapterInfo",
+    "ArgumentError",
     "BusConfig",
     "BitTiming",
     "BitTimingConst",
+    "BusError",
     "CanFdBus",
     "CanFdError",
     "CanFrame",
@@ -40,6 +46,8 @@ __all__ = [
     "DEFAULT_VID",
     "DeviceInfo",
     "DeviceSelector",
+    "NotFoundError",
+    "TimeoutError",
     "calculate_bit_timing",
     "decode_frame",
     "dlc_to_length",
