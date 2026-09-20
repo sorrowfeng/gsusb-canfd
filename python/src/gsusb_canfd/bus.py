@@ -208,6 +208,21 @@ def _looks_like_gs_usb(device) -> bool:
     return _has_vendor_bulk_interface(device)
 
 
+def _iter_usb_devices():
+    """Yield attached USB devices, translating pyusb's backend error.
+
+    pyusb raises ``usb.core.NoBackendError`` when no libusb backend can be
+    loaded (e.g. libusb-1.0 is not installed); surfacing that as a
+    :class:`BusError` keeps the library's error contract intact.
+    """
+    try:
+        yield from usb.core.find(find_all=True)
+    except usb.core.NoBackendError as exc:
+        raise BusError(
+            f"no USB backend available; is libusb-1.0 installed? ({exc})"
+        ) from exc
+
+
 def _matching_devices(
     vid: int,
     pid: int,
@@ -218,7 +233,7 @@ def _matching_devices(
 ) -> List:
     use_heuristic = vid == 0 and pid == 0
     found = []
-    for device in usb.core.find(find_all=True):
+    for device in _iter_usb_devices():
         if vid and device.idVendor != vid:
             continue
         if pid and device.idProduct != pid:

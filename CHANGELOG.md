@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Python: a missing USB backend (pyusb's `NoBackendError`, e.g. libusb-1.0 not
+  installed) is now reported as a `BusError` instead of leaking pyusb's
+  exception out of `scan_adapters()` / `open()`.
 - CMake: `-DLIBUSB_ROOT=<dir>` now works with the official libusb Windows
   release archive, which nests the header as `include/libusb/libusb.h` and ships
   import libraries under `MS64/static`, `MinGW64/static`, ... Previously the
