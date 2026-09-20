@@ -111,6 +111,36 @@ class BusConfig:
     hw_timestamp: bool = True
 
 
+_TIMEOUT_EXC = tuple(
+    exc for exc in (getattr(usb.core, "USBTimeoutError", None),) if exc is not None
+)
+_TIMEOUT_ERRNOS = frozenset((60, 110, 10060))
+"""errno values that mean "no data before the timeout" rather than a real failure.
+
+* 60    - ETIMEDOUT on macOS
+* 110   - ETIMEDOUT on Linux
+* 10060 - WSAETIMEDOUT on Windows (the one libusb surfaces through pyusb)
+"""
+
+
+def _is_timeout(exc: usb.core.USBError) -> bool:
+    """Return True when *exc* means the bulk read simply ran out of time.
+
+    pyusb's exception taxonomy differs by version and platform: Linux and macOS
+    raise a plain ``USBError`` carrying errno 60/110, Windows raises one with
+    errno 10060 and the message "Operation timed out", and pyusb >= 1.3 has a
+    dedicated ``usb.core.USBTimeoutError``. Checking only ``errno in (60, 110)``
+    or ``"timeout" in str(exc)`` therefore misses Windows entirely, turning an
+    idle bus into a fatal :class:`CanFdError`.
+    """
+    if _TIMEOUT_EXC and isinstance(exc, _TIMEOUT_EXC):
+        return True
+    if getattr(exc, "errno", None) in _TIMEOUT_ERRNOS:
+        return True
+    message = str(exc).lower()
+    return "timed out" in message or "timeout" in message
+
+
 def _get_string(device, index) -> str:
     if not index:
         return ""
@@ -419,7 +449,7 @@ class CanFdBus:
         try:
             buffer = self._device.read(self.ep_in, self._rx_size, timeout=int(timeout * 1000))
         except usb.core.USBError as exc:
-            if exc.errno in (60, 110) or "timeout" in str(exc).lower():
+            if _is_timeout(exc):
                 return None
             raise CanFdError(f"bulk read failed: {exc}") from exc
         return decode_frame(bytes(buffer), self.hw_timestamp)
