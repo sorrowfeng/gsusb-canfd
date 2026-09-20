@@ -72,17 +72,28 @@ endif()
 if(NOT CANFD_LIBUSB_TARGET)
   set(LIBUSB_ROOT "" CACHE PATH
       "Root of an extracted/installed libusb (contains include/ and lib/)")
+  # PATH_SUFFIXES covers both the usual install layout (include/, lib/) and the
+  # official Windows release-archive layout, which nests the header one level
+  # deeper (include/libusb/libusb.h) and ships per-architecture import
+  # libraries (MS64/static, MinGW64/static, ...). Without those two entries a
+  # plain -DLIBUSB_ROOT=<archive root> fails to configure, despite the error
+  # message below telling users to do exactly that.
   find_path(CANFD_LIBUSB_INCLUDE_DIR NAMES libusb.h
     HINTS ${LIBUSB_ROOT} ENV LIBUSB_ROOT
-    PATH_SUFFIXES include include/libusb-1.0)
+    PATH_SUFFIXES include include/libusb include/libusb-1.0)
   find_library(CANFD_LIBUSB_LIBRARY NAMES usb-1.0 libusb-1.0
     HINTS ${LIBUSB_ROOT} ENV LIBUSB_ROOT
-    PATH_SUFFIXES lib lib64 lib/x64 x64/Release/dll)
+    PATH_SUFFIXES lib lib64 lib/x64 x64/Release/dll
+                  MS64/static MS64 MinGW64/static MinGW64)
   if(CANFD_LIBUSB_INCLUDE_DIR AND CANFD_LIBUSB_LIBRARY)
     add_library(canfd_libusb INTERFACE)
     target_include_directories(canfd_libusb INTERFACE "${CANFD_LIBUSB_INCLUDE_DIR}")
     target_link_libraries(canfd_libusb INTERFACE "${CANFD_LIBUSB_LIBRARY}")
     set(CANFD_LIBUSB_TARGET canfd_libusb)
+  else()
+    message(STATUS
+      "libusb not found; after last resort. include='${CANFD_LIBUSB_INCLUDE_DIR}' "
+      "library='${CANFD_LIBUSB_LIBRARY}'")
   endif()
 endif()
 
@@ -93,7 +104,12 @@ if(NOT CANFD_LIBUSB_TARGET)
     "  Debian:  sudo apt install libusb-1.0-0-dev\n"
     "  Windows: vcpkg install libusb, or download the official\n"
     "           libusb-1.0.xx.7z from https://github.com/libusb/libusb/releases,\n"
-    "           extract it and pass -DLIBUSB_ROOT=<extracted-dir>")
+    "           extract it and pass -DLIBUSB_ROOT=<extracted-dir>\n"
+    "Searched for libusb.h under: ${LIBUSB_ROOT} (include, include/libusb, include/libusb-1.0)\n"
+    "Searched for usb-1.0/libusb-1.0 under: ${LIBUSB_ROOT} "
+    "(lib, lib64, lib/x64, x64/Release/dll, MS64/static, MS64, MinGW64/static, MinGW64)\n"
+    "Or point directly at the files with -DCANFD_LIBUSB_INCLUDE_DIR=... "
+    "-DCANFD_LIBUSB_LIBRARY=...")
 endif()
 
 add_library(canfd

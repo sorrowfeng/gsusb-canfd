@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- CMake: `-DLIBUSB_ROOT=<dir>` now works with the official libusb Windows
+  release archive, which nests the header as `include/libusb/libusb.h` and ships
+  import libraries under `MS64/static`, `MinGW64/static`, ... Previously the
+  search suffixes only covered `include/libusb-1.0` and `lib/`, so following the
+  library's own error message failed at configure time on Windows.
+
 ## [0.1.2] - 2026-09-20
 
 ### Fixed
