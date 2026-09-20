@@ -139,6 +139,12 @@ while (bus.receive(rx, std::chrono::milliseconds(500))) {
 }
 ```
 
+A frame this adapter transmits also comes back as a loopback, but it only carries
+the marker when the sender asked for it: `bus.send(frame, /*echo=*/true)` makes it
+arrive with `CanFrame::echo == true`, while the default (`bus.send(frame)`) leaves
+it indistinguishable from received traffic. Unless you opted in, filter on
+`frame.id`.
+
 Callback mode instead of polling:
 
 ```cpp
@@ -203,6 +209,12 @@ int rc = canfd_receive(bus, &rx, 500);   /* 1 frame, 0 timeout, -1 error */
 canfd_close(bus);
 ```
 
+`canfd_send(bus, &tx)` never produces an echo frame: the adapter only marks a
+loopback when the sender asked for a tag. Use
+`canfd_send_echo(bus, &tx, 1)` when you need to tell your own transmissions
+apart from traffic addressed to you — the copy then arrives with
+`rx.echo == 1`.
+
 Async receive uses `canfd_start(bus, callback, user)` / `canfd_stop(bus)`; the
 callback runs on the library's receive thread. `canfd_open(index)` opens the first
 discovered adapter; use `canfd_open_channel(vid, pid, index, channel)` to pin
@@ -218,8 +230,14 @@ canfd monitor --bitrate 1000000 --sample-point 0.80 \
               --trigger --trigger-id 501 --trigger-data 00025001 \
               --count 20
 
+canfd monitor --trigger --show-echo       # tag our trigger, print its loopback
+
 canfd send --classic 123 1122334455667788
 ```
+
+`--show-echo` is what makes a `monitor` run able to see its own traffic at all:
+the tool tags the trigger frames it sends, so the adapter returns them and they
+are printed as `ec` lines instead of the `RX` used for bus traffic.
 
 ## Hardware demo
 
@@ -279,7 +297,7 @@ canfd> scan                       # list adapters again
 canfd> open 1                     # switch to another adapter
 canfd> filter 481                 # only show these ids (filter off to clear)
 canfd> dedup on                   # hide repeated identical payloads
-canfd> fd on | brs on | echo on
+canfd> fd on | brs on | echo on      # echo tags our TX, so the loopbacks come back marked
 canfd> wait 3                     # keep receiving without typing
 canfd> quit
 ```
@@ -371,8 +389,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and submit changes
 * Multi-channel devices: select a channel with `DeviceSelector::channel` (C++),
   `DeviceSelector(channel=...)` (Python) or `--channel C` (both CLIs);
   `channelCount()` / `channel_count()` reports how many the device has.
-* `receive()` returns every frame the adapter sees, including the adapter's own TX echo.
-  Filter with `CanFrame::echo` and/or the ID.
+* `receive()` returns every frame the adapter sees. The adapter's own TX comes back
+  too, but as a loopback it is only *marked* when the sender opted in:
+  `send(frame, true)` (C++) / `send(frame, echo=True)` (Python) /
+  `canfd_send_echo()` (C ABI) make it arrive with `echo` set. Otherwise filter on
+  the ID, because an untagged loopback is indistinguishable from received traffic.
 * Hardware timestamps are used when the device advertises
   `GS_CAN_FEATURE_HW_TIMESTAMP`; RX buffers are then 80 bytes.
 * `CanFdBus` owns an exclusive USB handle and is not meant to be shared across threads

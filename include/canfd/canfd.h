@@ -104,6 +104,12 @@ CANFD_API CanFdHandle* canfd_open_channel(uint16_t vid, uint16_t pid, int index,
 
 CANFD_API int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config);
 CANFD_API int canfd_send(CanFdHandle* handle, const CanFdFrame* frame);
+/* Same as canfd_send(), but with an explicit TX tag request: when `echo` is
+ * non-zero the adapter echoes the frame back, and it reaches
+ * canfd_receive()/the receive callback with CanFdFrame::echo set. That is the
+ * only way to tell this adapter's own transmissions apart from traffic
+ * addressed to it, so canfd_send() (echo = 0) can never produce echo frames. */
+CANFD_API int canfd_send_echo(CanFdHandle* handle, const CanFdFrame* frame, int echo);
 CANFD_API int canfd_receive(CanFdHandle* handle, CanFdFrame* frame, int timeout_ms);
 
 CANFD_API int canfd_start(CanFdHandle* handle, CanFdReceiveCallback callback, void* user);

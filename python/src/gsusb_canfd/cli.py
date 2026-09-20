@@ -132,7 +132,8 @@ def cmd_monitor(args) -> int:
         if args.trigger:
             bus.send(CanFrame(id=args.trigger_id, data=args.trigger_data,
                               extended=args.trigger_id > 0x7FF,
-                              fd=not args.classic, brs=not args.classic))
+                              fd=not args.classic, brs=not args.classic),
+                     echo=args.show_echo)
             print(f"trigger: sent {args.trigger_id:03X}")
             last_trigger = time.time()
 
@@ -140,7 +141,8 @@ def cmd_monitor(args) -> int:
             if args.trigger and args.repeat and time.time() - last_trigger >= args.repeat:
                 bus.send(CanFrame(id=args.trigger_id, data=args.trigger_data,
                                   extended=args.trigger_id > 0x7FF,
-                                  fd=not args.classic, brs=not args.classic))
+                                  fd=not args.classic, brs=not args.classic),
+                         echo=args.show_echo)
                 last_trigger = time.time()
 
             frame = bus.receive(timeout=timeout)
@@ -187,7 +189,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_mon.add_argument("--repeat", type=float, default=0.0, help="re-send trigger every N seconds")
     p_mon.add_argument("--filter", type=_parse_id, nargs="*", default=None,
                        help="only show these ids")
-    p_mon.add_argument("--show-echo", action="store_true", help="also show TX echoes")
+    p_mon.add_argument("--show-echo", action="store_true",
+                       help="also show the loopbacks of the frames this tool sends "
+                            "(it tags them so the adapter returns them marked)")
     p_mon.add_argument("--rate", type=float, default=200.0, help="receive rate in Hz")
     p_mon.add_argument("--count", type=int, default=0, help="stop after N frames")
     p_mon.set_defaults(func=cmd_monitor)

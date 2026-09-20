@@ -19,7 +19,7 @@
 //   open <index>              switch to another adapter
 //   fd on|off                 CAN FD toggle
 //   brs on|off                bit-rate switch toggle (FD only)
-//   echo on|off               show our own TX echoes
+//   echo on|off               tag our TX and show the returned loopbacks
 //   filter <id...>|off        only show matching arbitration ids
 //   dedup on|off              hide repeated identical payloads
 //   wait <seconds>            keep receiving without typing
@@ -238,7 +238,7 @@ void sendFrame(State& state, uint32_t id, const std::vector<uint8_t>& data, bool
   for (uint8_t i = 0; i < frame.size; ++i) {
     frame.data[i] = data[i];
   }
-  state.bus->send(frame);
+  state.bus->send(frame, state.show_echo);
   printFrame(frame);
 }
 
@@ -255,7 +255,7 @@ void printHelp() {
       "  open <index>              switch to another adapter\n"
       "  fd on|off                 CAN FD toggle (default on)\n"
       "  brs on|off                bit-rate switch toggle (default on)\n"
-      "  echo on|off               show our own TX echoes (default off)\n"
+      "  echo on|off               tag our TX, show the loopbacks (default off)\n"
       "  filter <id...>|off        only show matching arbitration ids\n"
       "  dedup on|off              hide repeated identical payloads\n"
       "  wait <seconds>            keep receiving\n"

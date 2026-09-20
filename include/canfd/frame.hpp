@@ -15,6 +15,11 @@ constexpr uint32_t kCanErrFlag = 0x20000000u;
 constexpr uint32_t kCanEffMask = 0x1FFFFFFFu;
 constexpr uint32_t kEchoNone = 0xFFFFFFFFu;
 
+/* Non-ECHO_NONE tag for a TX frame: the adapter echoes the frame back with this
+   same id, which is what makes decodeFrame() set CanFrame::echo. Any value
+   other than kEchoNone works; 1 is used everywhere in this project. */
+constexpr uint32_t kEchoTag = 1u;
+
 constexpr std::size_t kMaxPayload = 64;
 constexpr std::size_t kHeaderSize = 12;
 

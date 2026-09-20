@@ -158,12 +158,16 @@ int canfd_configure(CanFdHandle* handle, const CanFdBusConfig* config) {
 }
 
 int canfd_send(CanFdHandle* handle, const CanFdFrame* frame) {
+  return canfd_send_echo(handle, frame, 0);
+}
+
+int canfd_send_echo(CanFdHandle* handle, const CanFdFrame* frame, int echo) {
   if (handle == nullptr || frame == nullptr) {
     setError("invalid argument");
     return CANFD_ERROR;
   }
   try {
-    handle->bus.send(toBusFrame(*frame));
+    handle->bus.send(toBusFrame(*frame), echo != 0);
     return CANFD_OK;
   } catch (const std::exception& exc) {
     setError(exc.what());

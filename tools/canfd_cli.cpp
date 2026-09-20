@@ -45,6 +45,7 @@ struct Options {
   uint32_t trigger_id = 0x501;
   std::vector<uint8_t> trigger_data = {0x00, 0x02, 0x50, 0x01};
   bool trigger = false;
+  bool show_echo = false;
   int count = 0;
 };
 
@@ -56,7 +57,7 @@ std::string usage() {
          "                [--bitrate B] [--sample-point S]\n"
          "                [--data-bitrate B] [--data-sample-point S]\n"
          "                [--trigger] [--trigger-id ID] [--trigger-data HEX]\n"
-         "                [--count N]\n"
+         "                [--show-echo] [--count N]\n"
          "  --vid/--pid default to 0 (any gs_usb adapter)\n";
 }
 
@@ -90,6 +91,8 @@ bool parseArgs(int argc, char** argv, Options& opts) {
       opts.config.fd = false;
     } else if (arg == "--trigger") {
       opts.trigger = true;
+    } else if (arg == "--show-echo") {
+      opts.show_echo = true;
     } else if (arg == "--trigger-id") {
       opts.trigger_id = parseId(next("--trigger-id"));
     } else if (arg == "--trigger-data") {
@@ -164,7 +167,9 @@ int run(bool monitor, Options& opts) {
   }
 
   if (opts.trigger) {
-    bus.send(makeFrame(opts.trigger_id, opts.trigger_data, opts.config.fd));
+    // --show-echo is what makes the trigger's own loopback visible, so the tag
+    // is only requested when the user asked to see echoes.
+    bus.send(makeFrame(opts.trigger_id, opts.trigger_data, opts.config.fd), opts.show_echo);
     std::printf("trigger: sent %03X\n", opts.trigger_id);
   }
 
@@ -175,10 +180,10 @@ int run(bool monitor, Options& opts) {
     if (!bus.receive(frame, std::chrono::milliseconds(100))) {
       continue;
     }
-    if (frame.echo) {
+    if (frame.echo && !opts.show_echo) {
       continue;
     }
-    std::printf("%s\n", frame.toString().c_str());
+    std::printf("%s  %s\n", frame.echo ? "ec" : "RX", frame.toString().c_str());
     ++printed;
     if (opts.count > 0 && printed >= opts.count) {
       break;

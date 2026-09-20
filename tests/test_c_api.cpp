@@ -40,6 +40,9 @@ int main() {
   check(canfd_configure(reinterpret_cast<CanFdHandle*>(1), nullptr) == CANFD_ERROR,
         "null config is rejected");
   check(canfd_send(nullptr, &frame) == CANFD_ERROR, "null send is rejected");
+  check(canfd_send_echo(nullptr, &frame, 1) == CANFD_ERROR, "null send_echo is rejected");
+  check(canfd_send_echo(reinterpret_cast<CanFdHandle*>(1), nullptr, 0) == CANFD_ERROR,
+        "null send_echo frame is rejected");
   check(canfd_receive(nullptr, &frame, 10) == CANFD_ERROR, "null receive is rejected");
   check(canfd_start(nullptr, nullptr, nullptr) == CANFD_ERROR, "null start is rejected");
 

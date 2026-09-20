@@ -29,6 +29,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   behaviour.
 - The Python CI job now runs on Windows and macOS as well, and asserts that
   importing the package works without libusb installed.
+- `CanFdBus::send(frame, echo)` and its C ABI counterpart
+  `canfd_send_echo(handle, frame, echo)`: the two entry points that ask the
+  adapter to echo a transmitted frame back marked. `send(frame)` / `canfd_send()`
+  are unchanged and still send untagged, so a loopback stays indistinguishable
+  from received traffic unless the caller opts in.
+- Echo round-trip checks in `tests/test_frame.cpp` and `tests/test_c_api.cpp`, and
+  `python/tests/test_cli_echo.py`, which drives `monitor` against a fake bus and
+  needs no hardware. The CLI ones fail against the previous wiring.
+
+### Changed
+
+- The three "show echoes" switches now tag what they transmit:
+  `canfd monitor --show-echo`, `gsusb-canfd monitor --show-echo`, and
+  `canfd_term`'s `echo on` / `--echo`. Every send used to write `kEchoNone`, so no
+  frame could ever carry the marker — which made those switches, the
+  `if (frame.echo) continue;` guards and the `ec` output path all unreachable.
+  Echo frames are now labelled `ec` so they stay distinguishable from `RX`.
 
 ### Documentation
 
@@ -39,8 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected the note on TX echo. A loopback is only marked as one when the sender
   asked for a tag; the default send path writes `kEchoNone` (`0xFFFFFFFF`), so a
   frame from your own adapter arrives looking like ordinary received traffic and
-  has to be filtered by ID. Python's `send(..., echo=True)` is the only way to opt
-  in — the C++ `send()` takes no tag parameter.
+  has to be filtered by ID. `send(..., echo=True)` (Python), `send(frame, true)`
+  (C++) and `canfd_send_echo()` (C ABI) are how you opt in.
 - The hardware demos no longer describe themselves as "echo filtered". They filter
   by rx-id, which is what actually removes their own trigger's loopback; the banner
   and docstrings now say so.

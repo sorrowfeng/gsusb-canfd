@@ -88,7 +88,14 @@ gsusb-canfd monitor --bitrate 1000000 --sample-point 0.80 \
                     --count 20
 
 gsusb-canfd send --classic 123 1122334455667788
+
+gsusb-canfd monitor --trigger --show-echo   # tag our trigger, show its loopback
 ```
+
+`--show-echo` is what makes a `monitor` run able to see anything of its own: it
+tags the trigger frames this tool sends (`send(..., echo=True)`), so the adapter
+returns them marked and they are printed alongside the bus traffic. The C++ CLI,
+`canfd_term` (`echo on`) and `CanFdBus::send(frame, true)` behave the same way.
 
 ## Hardware demo
 

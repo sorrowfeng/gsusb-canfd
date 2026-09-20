@@ -236,7 +236,9 @@ void CanFdBus::configure(const BusConfig& config) {
   impl_->started = true;
 }
 
-void CanFdBus::send(const CanFrame& frame) {
+void CanFdBus::send(const CanFrame& frame) { send(frame, false); }
+
+void CanFdBus::send(const CanFrame& frame, bool echo) {
   if (!impl_->transport || !impl_->started) {
     throw CanFdError("device is not started");
   }
@@ -247,7 +249,7 @@ void CanFdBus::send(const CanFrame& frame) {
   }
   out.channel = impl_->channel;
 
-  const std::vector<uint8_t> encoded = encodeFrame(out, kEchoNone);
+  const std::vector<uint8_t> encoded = encodeFrame(out, echo ? kEchoTag : kEchoNone);
   impl_->transport->bulkWrite(encoded.data(), static_cast<int>(encoded.size()), 1000);
 }
 

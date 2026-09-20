@@ -87,6 +87,12 @@ class CanFdBus {
   void open();
   void configure(const BusConfig& config = BusConfig{});
   void send(const CanFrame& frame);
+  /* Same, but asks the adapter to echo this frame back as a loopback: the copy
+     arrives from receive() with CanFrame::echo == true, which is the only way
+     to tell your own TX apart from frames addressed to you. Sends untagged by
+     default, so a loopback stays indistinguishable from received traffic unless
+     you opt in here. */
+  void send(const CanFrame& frame, bool echo);
   bool receive(CanFrame& out,
                std::chrono::milliseconds timeout = std::chrono::milliseconds(1000));
 

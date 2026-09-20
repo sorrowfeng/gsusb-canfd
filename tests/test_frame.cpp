@@ -74,6 +74,32 @@ void testRoundTripExtendedClassic() {
         "classic payload round trip");
 }
 
+void testEchoTag() {
+  canfd::CanFrame frame;
+  frame.id = 0x501;
+  frame.fd = true;
+  frame.size = 2;
+  frame.data[0] = 0x00;
+  frame.data[1] = 0x02;
+
+  check(canfd::kEchoTag != canfd::kEchoNone, "the TX tag is a real tag");
+
+  // Untagged: the frame comes back indistinguishable from received traffic,
+  // which is why CanFdBus::send() is documented as unable to produce echoes.
+  const auto untagged = canfd::encodeFrame(frame, canfd::kEchoNone);
+  const auto untagged_out = canfd::decodeFrame(untagged.data(), untagged.size(), false);
+  check(!untagged_out.echo, "kEchoNone does not mark a loopback");
+
+  // Tagged: this is what CanFdBus::send(frame, true) writes, and the tag must
+  // not disturb the arbitration id or the payload.
+  const auto tagged = canfd::encodeFrame(frame, canfd::kEchoTag);
+  const auto tagged_out = canfd::decodeFrame(tagged.data(), tagged.size(), false);
+  check(tagged_out.echo, "kEchoTag marks a loopback");
+  check(tagged_out.id == frame.id, "the tag leaves the id alone");
+  check(tagged_out.size == 2 && tagged_out.data[0] == 0x00 && tagged_out.data[1] == 0x02,
+        "the tag leaves the payload alone");
+}
+
 void testTimestamp() {
   canfd::CanFrame frame;
   frame.id = 0x10;
@@ -96,6 +122,7 @@ int main() {
   testDlc();
   testRoundTripFd();
   testRoundTripExtendedClassic();
+  testEchoTag();
   testTimestamp();
   if (failures == 0) {
     std::printf("test_frame: OK\n");
