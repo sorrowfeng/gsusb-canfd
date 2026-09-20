@@ -1,8 +1,10 @@
 // canfd_demo: end-to-end hardware demo for gsusb-canfd on macOS/Linux/Windows.
 //
 // It scans for an adapter, opens it, prints the negotiated bit timing, transmits
-// a trigger frame on 0x501 and prints every response it sees (0x481 by default),
-// skipping the adapter's own TX echo.
+// a trigger frame on 0x501 and prints every response it sees (0x481 by default).
+// Its own trigger comes back as an untagged loopback, so what keeps it out of the
+// count is the rx-id filter, not `echo` -- with --all it shows up as an ordinary
+// 0x501 frame.
 //
 // Build:  cmake --build build --target canfd_demo
 // Run:    ./build/canfd_demo --seconds 6
@@ -193,7 +195,7 @@ int main(int argc, char** argv) {
       std::printf("=== passive monitor for %.1fs ===\n", args.seconds);
     }
 
-    std::printf("=== rx for %.1fs (echo filtered, showing %s) ===\n", args.seconds,
+    std::printf("=== rx for %.1fs (showing %s) ===\n", args.seconds,
                 args.filter_rx_id ? "0x481" : "all ids");
     const auto deadline =
         std::chrono::steady_clock::now() + std::chrono::duration<double>(args.seconds);

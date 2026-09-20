@@ -1,8 +1,9 @@
 """End-to-end hardware demo for gsusb-canfd (Python), mirroring examples/canfd_demo.cpp.
 
 It scans for an adapter, opens it, prints the negotiated bit timing, transmits a
-trigger frame on 0x501 and prints every response it sees (0x481 by default),
-skipping the adapter's own TX echo.
+trigger frame on 0x501 and prints every response it sees (0x481 by default).  Its
+own trigger comes back as an untagged loopback, so the ``--rx-id`` filter is what
+keeps it out of the count; with ``--all`` it shows up as an ordinary 0x501 frame.
 
 Install the package first (``pip install gsusb-canfd`` or ``pip install ./python``)
 then run:
@@ -141,7 +142,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"=== passive monitor for {args.seconds:.1f}s ===")
 
         target = "all ids" if args.all else f"0x{args.rx_id:03X}"
-        print(f"=== rx for {args.seconds:.1f}s (echo filtered, showing {target}) ===")
+        print(f"=== rx for {args.seconds:.1f}s (showing {target}) ===")
         deadline = time.monotonic() + args.seconds
         last_trigger = time.monotonic()
         next_report = time.monotonic() + 2.0

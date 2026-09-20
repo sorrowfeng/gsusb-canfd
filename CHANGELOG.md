@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   frame from your own adapter arrives looking like ordinary received traffic and
   has to be filtered by ID. Python's `send(..., echo=True)` is the only way to opt
   in — the C++ `send()` takes no tag parameter.
+- The hardware demos no longer describe themselves as "echo filtered". They filter
+  by rx-id, which is what actually removes their own trigger's loopback; the banner
+  and docstrings now say so.
 
 ## [0.1.1] - 2026-09-20
 
