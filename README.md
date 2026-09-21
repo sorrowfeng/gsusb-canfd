@@ -4,6 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/gsusb-canfd.svg)](https://pypi.org/project/gsusb-canfd/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](#)
+[![platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](#supported-platforms)
 
 Cross-platform, userspace **gs_usb** CAN / CAN FD toolkit in **C++17 and Python**.
 Both implementations speak the same wire protocol and expose the same API, so you
@@ -20,10 +21,28 @@ candleLight reference in two ways:
 
 It speaks the same wire protocol as the Linux `gs_usb` kernel driver.
 
+## Supported platforms
+
+Runs on Windows, macOS and Linux, on 64-bit x86 and ARM.
+
+| OS | Architecture | Verified |
+| --- | --- | --- |
+| Windows | x64 (`MSVC` / `MinGW`) | ✅ tested on hardware |
+| macOS | Apple silicon (arm64) | ✅ tested on hardware |
+| Linux | x86_64 | ✅ tested on hardware |
+| Linux | aarch64 | ✅ tested on hardware |
+
+Same coverage in CI (build + tests on macOS, Linux and Windows, plus the Python
+package). The only platform-specific dependency is **libusb-1.0**; everything else
+is standard C++17 and Python 3.9+, so other combinations (macOS Intel, Windows on
+ARM, other UNIX-like systems) are expected to work as long as libusb is available
+(see [Requirements](#requirements)).
+
 ## Features
 
 * Two implementations, same API and protocol: C++17 (`canfd::CanFdBus`) and pure
   Python (`python/`, package `gsusb_canfd`)
+* Windows, macOS and Linux, on x64 and ARM (see [Supported platforms](#supported-platforms))
 * CAN and CAN FD (ISO), standard and extended IDs, RTR
 * Arbitrary bitrates derived from the adapter's clock and sample-point target
 * Blocking `receive()` **and** background-thread callback mode (preferred for

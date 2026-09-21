@@ -22,6 +22,8 @@ pip install ./python
 The distribution is named `gsusb-canfd`; the import name is `gsusb_canfd`.
 
 Requires `libusb-1.0` at runtime (`brew install libusb`, `apt install libusb-1.0-0-dev`).
+Tested on Windows x64, macOS (Apple silicon) and Linux (x86_64 and aarch64); the
+wheel is pure Python, so other platforms work too as long as libusb is present.
 On Windows there is no system copy to find: put the directory holding `libusb-1.0.dll`
 on `PATH`. `pyusb` looks the DLL up through `ctypes.util.find_library()`, which
 searches `PATH` only, so a copy sitting next to `python.exe` is not found. Importing
