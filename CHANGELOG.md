@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- CMake install rules are now guarded by a new `CANFD_INSTALL` option, which
+  defaults to ON only for top-level builds. Embedding the library with
+  `add_subdirectory()` no longer pollutes the parent install tree with
+  `include/canfd`, `lib/libcanfd.a` and `lib/cmake/gsusb-canfd`; a parent can
+  opt in again with `-DCANFD_INSTALL=ON`.
+
 ## [0.1.3] - 2026-09-20
 
 ### Added

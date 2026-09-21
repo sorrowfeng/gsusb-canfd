@@ -29,6 +29,13 @@ option(CANFD_BUILD_SHARED
        "Build the library as a shared library (defaults to BUILD_SHARED_LIBS)" ${BUILD_SHARED_LIBS})
 option(CANFD_STATIC_RUNTIME
        "Link the C/C++ runtime statically (Windows: keeps libusb-1.0.dll as the only dependency)" OFF)
+# Embedded via add_subdirectory() the parent usually does not want this
+# library's headers/lib/cmake package in its own install tree, so default the
+# install rules to top-level builds only. A parent can still opt in with
+# -DCANFD_INSTALL=ON.
+option(CANFD_INSTALL
+       "Install the library, headers and CMake package (defaults to top-level builds)"
+       ${_canfd_top_level})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -153,35 +160,37 @@ endif()
 
 # --- installation -----------------------------------------------------------
 # find_package(gsusb-canfd) then target_link_libraries(app PRIVATE canfd::canfd).
-install(TARGETS canfd
-  EXPORT gsusb_canfdTargets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+if(CANFD_INSTALL)
+  install(TARGETS canfd
+    EXPORT gsusb_canfdTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        PATTERN ".DS_Store" EXCLUDE)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/canfd/version.hpp
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/canfd)
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          PATTERN ".DS_Store" EXCLUDE)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/canfd/version.hpp
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/canfd)
 
-install(EXPORT gsusb_canfdTargets
-  FILE gsusb-canfd-targets.cmake
-  NAMESPACE canfd::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+  install(EXPORT gsusb_canfdTargets
+    FILE gsusb-canfd-targets.cmake
+    NAMESPACE canfd::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
 
-configure_package_config_file(
-  cmake/gsusb-canfd-config.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+  configure_package_config_file(
+    cmake/gsusb-canfd-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
 
-write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion)
+  write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
 
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
-  cmake/CanFdFindLibusb.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/gsusb-canfd-config-version.cmake
+    cmake/CanFdFindLibusb.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gsusb-canfd)
+endif()
