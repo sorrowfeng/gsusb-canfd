@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- README: add a "Supported platforms" section documenting the hardware-verified
+  platforms (Windows x64, macOS Apple silicon, Linux x86_64 and aarch64) and note
+  that any libusb-capable platform is expected to work.
+
 ### Changed
 
 - CMake install rules are now guarded by a new `CANFD_INSTALL` option, which
